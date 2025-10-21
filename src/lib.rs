@@ -1,11 +1,9 @@
 use std::{
     ffi::OsStr,
-    io::{BufWriter, Write},
     path::{Path, PathBuf},
 };
 
-use wesl::{Mangler, ModulePath, Resolver, StandardResolver, Wesl};
-use wgsl_to_wgpu::{MatrixVectorTypes, WriteOptions};
+use wesl::{ModulePath, Resolver, StandardResolver, Wesl};
 
 mod wgpu_bindings_ext;
 
@@ -35,7 +33,7 @@ pub enum WeslBuildError {
 }
 
 pub trait WeslBuildExtension<WeslResolver: Resolver> {
-    type ExtensionError: std::error::Error;
+    type ExtensionError: std::error::Error + 'static;
 
     fn init_root(
         &mut self, shader_path: &str, res: &Wesl<WeslResolver>
@@ -69,8 +67,8 @@ pub fn build_shader_dir(
     // #[cfg(feature = "wgpu_bindings")]
     // writeln!(bindings_mod_file, "#![allow(unused)]\n")?;
     for ext in extensions.iter_mut() {
-        ext.init_root(shader_path, &wesl);
-            // .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+        ext.init_root(shader_path, &wesl)
+            .map_err(|e| Box::<_>::from(e))?;
     }
 
     // todo delete all in BINDING_ROOT_PATH before regen add some cashing(if wgsl_to_wgpu does not have it built-in)
@@ -99,7 +97,8 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             // make new mod per dir recurce to use mod structure
             let dir_path = entry.path();
             for ext in extensions.iter_mut() {
-                ext.into_mod(&dir_path).unwrap();
+                ext.into_mod(&dir_path)
+                    .map_err(|e| Box::<_>::from(e))?;
             }
             // let dir_name = dir_path.file_stem().unwrap().to_str().unwrap();
             // writeln!(bindings_mod_file, "pub(crate) mod {};", dir_name)?;
@@ -147,7 +146,8 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             );
 
             for ext in &mut *extensions {
-                ext.post_build(&mod_path, &wgsl_source_path).unwrap();
+                ext.post_build(&mod_path, &wgsl_source_path)
+                    .map_err(|e| Box::<_>::from(e))?;
             }
             // #[cfg(feature = "wgpu_bindings")]
             // generate_bindings(binding_root_path, bindings_mod_file, mod_path, wgsl_source_path)?;

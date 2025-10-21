@@ -1,2 +1,6 @@
+# cargo
 /target
+Cargo.lock
+
+# tests
 shader_bindings
