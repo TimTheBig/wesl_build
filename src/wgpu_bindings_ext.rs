@@ -1,4 +1,4 @@
-// #![cfg(feature = "wgpu_bindings")]
+#![cfg(feature = "wgpu_bindings")]
 
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -10,6 +10,9 @@ use wgsl_to_wgpu::WriteOptions;
 
 use crate::WeslBuildExtension;
 
+/// Generate bindings for your wgsl/wesl with wgpu_to_wgsl
+///
+/// Note this will set the `ManglerKind` to `Escape`
 pub struct WgpuBindingsExtension<W: Write> {
     /// The path to output the rust bindings for shaders
     binding_root_path: &'static str,
@@ -45,13 +48,25 @@ pub enum WgpuBindingsError {
 impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBindingsExtension<BufWriter<fs::File>> {
     type ExtensionError = WgpuBindingsError;
 
+    fn name<'n>() -> std::borrow::Cow<'n, str> {
+        "WgpuBindingsExtension".into()
+    }
+
     fn init_root(
         &mut self,
         _shader_path: &str,
-        _res: &wesl::Wesl<WeslResolver>,
+        res: &mut wesl::Wesl<WeslResolver>,
     ) -> Result<(), Self::ExtensionError> {
+        res.set_mangler(wesl::ManglerKind::Escape);
+
         writeln!(self.bindings_mod_file, "#![allow(unused)]\n")?;
 
+        Ok(())
+    }
+
+    fn exit_root(
+            self, shader_root_path: &str, res: &wesl::Wesl<WeslResolver>
+        ) -> Result<(), Self::ExtensionError> {
         Ok(())
     }
 
@@ -75,7 +90,11 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     }
 
     fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Self::ExtensionError> {
+        println!("{}", self.bindings_mod_path.display());
         self.bindings_mod_path.pop();
+        self.bindings_mod_path.pop();
+        self.bindings_mod_path.push("mod.rs");
+        println!("{}", self.bindings_mod_path.display());
 
         self.bindings_mod_file = BufWriter::new(std::fs::File::open(&self.bindings_mod_path)?);
 
