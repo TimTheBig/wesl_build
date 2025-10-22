@@ -65,8 +65,8 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     }
 
     fn exit_root(
-            self, shader_root_path: &str, res: &wesl::Wesl<WeslResolver>
-        ) -> Result<(), Self::ExtensionError> {
+        &mut self, _shader_root_path: &str, _res: &wesl::Wesl<WeslResolver>
+    ) -> Result<(), Self::ExtensionError> {
         Ok(())
     }
 

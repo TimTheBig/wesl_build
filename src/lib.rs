@@ -56,7 +56,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     /// * `shader_path` - the root dir of the shaders we are building
     /// * `res` - the wesl resolver being used by wesl_build
     fn exit_root(
-        self, shader_root_path: &str, res: &Wesl<WeslResolver>
+        &mut self, shader_root_path: &str, res: &Wesl<WeslResolver>
     ) -> Result<(), Self::ExtensionError>;
 
     /// Go one level into a shader module
@@ -106,7 +106,14 @@ pub fn build_shader_dir(
         Path::new(shader_path),
         &wesl,
         extensions,
-    )
+    )?;
+
+    for ext in extensions.iter_mut() {
+        ext.exit_root(shader_path, &mut wesl)
+            .map_err(|e| extension_error(ext, e))?;
+    }
+
+    Ok(())
 }
 
 fn build_all_in_dir<WeslResolver: Resolver>(
