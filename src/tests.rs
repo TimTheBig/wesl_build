@@ -8,6 +8,8 @@ use crate::wgpu_bindings_ext::WgpuBindingsExtension;
 
 #[test]
 fn test_bindings_ext() {
+    std::fs::create_dir_all("./test/src/shader_bindings").unwrap();
+
     #[cfg(feature = "logging")]
     init_build_logger();
 

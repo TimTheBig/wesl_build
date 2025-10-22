@@ -60,10 +60,15 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
 
         writeln!(self.bindings_mod_file, "pub(crate) mod {};", dir_name)?;
 
-        let sub_bindings_mod_file = BufWriter::new(std::fs::File::create(format!(
+        self.bindings_mod_path = PathBuf::from(format!(
             "src/shader_bindings/{}/mod.rs",
             dir_name
-        ))?);
+        ));
+
+        if let Some(dir_to_mod) = self.bindings_mod_path.parent() {
+            fs::create_dir_all(dir_to_mod)?;
+        }
+        let sub_bindings_mod_file = BufWriter::new(std::fs::File::create(&self.bindings_mod_path)?);
         self.bindings_mod_file = sub_bindings_mod_file;
 
         Ok(())
