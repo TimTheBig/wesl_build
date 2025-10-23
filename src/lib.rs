@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use std::{
     borrow::Cow, ffi::OsStr, path::{Path, PathBuf}
 };
@@ -101,7 +103,13 @@ fn extension_error(ext: &Box<dyn WeslBuildExtension<StandardResolver>>, error: B
 /// ```
 /// use wesl_build::{build_shader_dir, WeslBuildError, WeslBuildExtension};
 ///
-/// build_shader_dir("src/shaders", &[/* Box::new(Extension::new()) */]).expect("Building shaders failed");
+/// build_shader_dir(
+///     # "test/src/shaders",
+///     # /*
+///     "src/shaders",
+///     # */
+///     &mut [/* Box::new(Extension::new()) */]
+/// ).expect("Building shaders failed");
 /// ```
 pub fn build_shader_dir(
     shader_path: &str,

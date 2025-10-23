@@ -11,7 +11,7 @@ In `build.rs`:
 use wesl_build::{build_shader_dir, WeslBuildError, WeslBuildExtension};
 
 fn main() {
-    build_shader_dir("src/shaders", &[/* Box::new(Extension::new()) */]).expect("Building shaders failed");
+    build_shader_dir("src/shaders", &mut [/* Box::new(Extension::new()) */]).expect("Building shaders failed");
 }
 ```
 
