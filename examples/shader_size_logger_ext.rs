@@ -60,12 +60,10 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WeslSize
     ) -> Result<(), Box<dyn std::error::Error>> {
         let name = wesl_path.last().expect("file must have an element in path");
 
-        let source_lines = std::fs::read_to_string(wesl_path.to_path_buf())
-            .unwrap()
+        let source_lines = std::fs::read_to_string(wesl_path.to_path_buf())?
             .lines()
             .count();
-        let built_lines = std::fs::read_to_string(wgsl_built_path)
-            .unwrap()
+        let built_lines = std::fs::read_to_string(wgsl_built_path)?
             .lines()
             .count();
 

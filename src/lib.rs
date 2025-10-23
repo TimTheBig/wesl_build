@@ -198,7 +198,9 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             out_name.pop();
             out_name = PathBuf::from(
                 out_name
-                    .join(PathBuf::from(entry.file_name()).file_stem().unwrap())
+                    .join(PathBuf::from(entry.file_name()).file_stem()
+                        .expect("shader file must have a name in path")
+                    )
                     .to_str()
                     .unwrap()
                     .replace('/', "::"),
@@ -218,7 +220,9 @@ fn build_all_in_dir<WeslResolver: Resolver>(
 
             let wgsl_source_path = format!(
                 "{}/{}.wgsl",
-                std::env::var("OUT_DIR").unwrap(),
+                std::env::var("OUT_DIR").expect(
+                    "OUT_DIR env var must be set by cargo"/* any project with a build.rs will have this set */
+                ),
                 out_name_str
             );
 

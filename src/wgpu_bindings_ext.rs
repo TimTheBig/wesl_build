@@ -64,7 +64,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     }
 
     fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-        let dir_name = dir_path.file_stem().unwrap()
+        let dir_name = dir_path.file_stem().expect("module must have a name in path")
             .to_str().expect("mod path must be valid UTF-8");
         writeln!(self.bindings_mod_file, "pub(crate) mod {dir_name};")?;
 
@@ -126,7 +126,8 @@ fn generate_bindings(
 ) -> Result<(), Box<WgpuBindingsError>> {
     use wgsl_to_wgpu::MatrixVectorTypes;
 
-    let wgsl_source = std::fs::read_to_string(wgsl_source_path).unwrap();
+    let wgsl_source = std::fs::read_to_string(wgsl_source_path)
+        .map_err(|e| Box::new(WgpuBindingsError::IoErr(e)))?;
 
     // Configure the output based on the dependencies for the project
     let options = WriteOptions {
@@ -150,17 +151,19 @@ fn generate_bindings(
     );
     let binding_path = PathBuf::from(binding_path);
 
-    std::fs::create_dir_all(binding_path.parent().unwrap())
-        .map_err(|e| Box::<_>::from(WgpuBindingsError::IoErr(e)))?;
+    std::fs::create_dir_all(
+        binding_path.parent().expect("binding must have a parent mod or be in root")
+    ).map_err(|e| Box::from(WgpuBindingsError::IoErr(e)))?;
     std::fs::write(&binding_path, text.as_bytes())
-        .map_err(|e| Box::<_>::from(WgpuBindingsError::IoErr(e)))?;
+        .map_err(|e| Box::from(WgpuBindingsError::IoErr(e)))?;
 
     // Add entry to `mod.rs`
     writeln!(
         bindings_mod_file,
         "pub(crate) mod {};",
-        binding_path.file_stem().unwrap().to_str().unwrap()
-    ).map_err(|e| Box::<_>::from(WgpuBindingsError::IoErr(e)))?;
+        binding_path.file_stem().expect("binding must have a name in path")
+            .to_str().expect("mod path must be valid UTF-8")
+    ).map_err(|e| Box::from(WgpuBindingsError::IoErr(e)))?;
 
     Ok(())
 }
