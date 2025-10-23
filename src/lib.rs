@@ -1,7 +1,9 @@
 #![doc = include_str!("../README.md")]
 
 use std::{
-    borrow::Cow, ffi::OsStr, path::{Path, PathBuf}
+    borrow::Cow,
+    ffi::OsStr,
+    path::{Path, PathBuf},
 };
 
 use wesl::{ModulePath, Resolver, StandardResolver, Wesl};
@@ -48,7 +50,9 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     /// * `shader_path` - the root dir of the shaders we are building
     /// * `res` - the wesl resolver being used by wesl_build
     fn init_root(
-        &mut self, shader_root_path: &str, res: &mut Wesl<WeslResolver>
+        &mut self,
+        shader_root_path: &str,
+        res: &mut Wesl<WeslResolver>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 
     /// The last time the extension is called this is in the root after all files/modules are covered
@@ -57,7 +61,9 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     /// * `shader_path` - the root dir of the shaders we are building
     /// * `res` - the wesl resolver being used by wesl_build
     fn exit_root(
-        &mut self, _shader_root_path: &str, _res: &Wesl<WeslResolver>
+        &mut self,
+        _shader_root_path: &str,
+        _res: &Wesl<WeslResolver>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
@@ -85,7 +91,10 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
-fn extension_error(ext: &Box<dyn WeslBuildExtension<StandardResolver>>, error: Box<dyn std::error::Error>) -> WeslBuildError {
+fn extension_error(
+    ext: &Box<dyn WeslBuildExtension<StandardResolver>>,
+    error: Box<dyn std::error::Error>,
+) -> WeslBuildError {
     WeslBuildError::ExtensionErr {
         extension_name: ext.name().into_owned(),
         error,
@@ -125,10 +134,8 @@ pub fn build_shader_dir(
     // todo delete all in BINDING_ROOT_PATH before regen add some cashing(if wgsl_to_wgpu does not have it built-in)
 
     build_all_in_dir(
-        shader_path,
-        Path::new(shader_path),
-        &wesl,
-        extensions,
+        shader_path, Path::new(shader_path),
+        &wesl, extensions,
     )?;
 
     for ext in extensions.iter_mut() {

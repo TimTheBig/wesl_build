@@ -4,8 +4,8 @@ use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::{fs, path::Path};
 
-use wesl::ModulePath;
 use wesl::Mangler;
+use wesl::ModulePath;
 use wgsl_to_wgpu::WriteOptions;
 
 use crate::WeslBuildExtension;
@@ -65,7 +65,8 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         // println!("base: {}", self.bindings_mod_path.display());
 
-        let dir_name = dir_path.file_stem().unwrap().to_str().expect("mod path must be valid UTF-8");
+        let dir_name = dir_path.file_stem().unwrap()
+            .to_str().expect("mod path must be valid UTF-8");
         writeln!(self.bindings_mod_file, "pub(crate) mod {dir_name};")?;
 
         // remove last mod
@@ -96,14 +97,20 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         Ok(())
     }
 
-    fn post_build(&mut self, mod_path: &ModulePath, wgsl_source_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    fn post_build(
+        &mut self,
+        mod_path: &ModulePath,
+        wgsl_source_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         generate_bindings(
-            self.binding_root_path, &mut self.bindings_mod_file,
-            mod_path, wgsl_source_path
-        ).map_err(Box::<_>::from)
+            self.binding_root_path,
+            &mut self.bindings_mod_file,
+            mod_path,
+            wgsl_source_path,
+        )
+        .map_err(Box::<_>::from)
     }
 }
-
 
 #[cfg(feature = "wgpu_bindings")]
 fn generate_bindings(
