@@ -57,7 +57,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     /// * `shader_path` - the root dir of the shaders we are building
     /// * `res` - the wesl resolver being used by wesl_build
     fn exit_root(
-        &mut self, shader_root_path: &str, res: &Wesl<WeslResolver>
+        &mut self, _shader_root_path: &str, _res: &Wesl<WeslResolver>
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
@@ -66,7 +66,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     ///
     /// ### Args
     /// * `dir_path` - the current dir of the mod we are entering
-    fn into_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
+    fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
     /// Go one level out of a shader module
     ///
     /// ### Args
@@ -132,7 +132,7 @@ pub fn build_shader_dir(
     )?;
 
     for ext in extensions.iter_mut() {
-        ext.exit_root(shader_path, &mut wesl)
+        ext.exit_root(shader_path, &wesl)
             .map_err(|e| extension_error(ext, e))?;
     }
 
@@ -143,7 +143,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
     root_shader_path: &str,
     path: &Path,
     wesl: &Wesl<WeslResolver>,
-    mut extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
+    extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
 ) -> Result<(), WeslBuildError> {
     for entry in std::fs::read_dir(path)?.filter_map(|entry| entry.ok()) {
         if entry.metadata()?.is_dir() {
@@ -151,7 +151,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             let dir_path = entry.path();
             for ext in extensions.iter_mut() {
                 // println!("running: {}", ext.name());
-                ext.into_mod(&dir_path)
+                ext.enter_mod(&dir_path)
                     .map_err(|e| extension_error(ext, e))?;
             }
             // let dir_name = dir_path.file_stem().unwrap().to_str().unwrap();
@@ -161,7 +161,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             //     dir_name
             // ))?);
 
-            build_all_in_dir(root_shader_path, &dir_path, wesl, &mut extensions)?;
+            build_all_in_dir(root_shader_path, &dir_path, wesl, extensions)?;
 
             if path != Path::new(root_shader_path) {
                 for ext in extensions.iter_mut() {

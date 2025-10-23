@@ -62,7 +62,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         Ok(())
     }
 
-    fn into_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         // println!("base: {}", self.bindings_mod_path.display());
 
         let dir_name = dir_path.file_stem().unwrap().to_str().expect("mod path must be valid UTF-8");
@@ -84,7 +84,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         Ok(())
     }
 
-    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fn exit_mod(&mut self, _dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         // println!("{}", self.bindings_mod_path.display());
         self.bindings_mod_path.pop();
         self.bindings_mod_path.pop();
@@ -100,7 +100,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         generate_bindings(
             self.binding_root_path, &mut self.bindings_mod_file,
             mod_path, wgsl_source_path
-        ).map_err(|e| Box::<_>::from(e))
+        ).map_err(Box::<_>::from)
     }
 }
 
@@ -114,7 +114,7 @@ fn generate_bindings(
 ) -> Result<(), WgpuBindingsError> {
     use wgsl_to_wgpu::MatrixVectorTypes;
 
-    let wgsl_source = std::fs::read_to_string(&wgsl_source_path).unwrap();
+    let wgsl_source = std::fs::read_to_string(wgsl_source_path).unwrap();
 
     // Configure the output based on the dependencies for the project
     let options = WriteOptions {
@@ -127,7 +127,7 @@ fn generate_bindings(
     // Generate the bindings
     let text = create_shader_module(
         &wgsl_source,
-        &wgsl_source_path,
+        wgsl_source_path,
         options
     ).unwrap();
 

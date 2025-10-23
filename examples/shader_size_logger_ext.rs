@@ -38,7 +38,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WeslSize
         Ok(())
     }
 
-    fn into_mod(&mut self, _dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fn enter_mod(&mut self, _dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
 
