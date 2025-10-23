@@ -90,9 +90,19 @@ fn extension_error(ext: &Box<dyn WeslBuildExtension<StandardResolver>>, error: B
     }
 }
 
+/// A simple and extensible build system for wesl
+///
 /// ## Args
 /// * `shader_path` - Root dir of all your shaders
 /// * `extensions` - An array of extensions you would like to run, see [`WeslBuildExtension`]
+///
+/// ## Example
+/// In `build.rs`:
+/// ```
+/// use wesl_build::{build_shader_dir, WeslBuildError, WeslBuildExtension};
+///
+/// build_shader_dir("src/shaders", &[/* Box::new(Extension::new()) */]).expect("Building shaders failed");
+/// ```
 pub fn build_shader_dir(
     shader_path: &str,
     extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],

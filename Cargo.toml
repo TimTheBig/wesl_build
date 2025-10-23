@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 
+readme = "README.md"
+repository = "https://github.com/TimTheBig/wesl_build"
+
+keywords = ["wesl", "build", "system", "bindings"]
+categories = ["development-tools::build-utils", "graphics"]
+
 [features]
 default = ["wgpu_bindings"]
 logging = ["dep:env_logger", "dep:log"]
