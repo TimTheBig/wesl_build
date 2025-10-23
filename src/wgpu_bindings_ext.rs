@@ -23,7 +23,7 @@ pub struct WgpuBindingsExtension<W: Write> {
 }
 
 impl WgpuBindingsExtension<BufWriter<fs::File>> {
-    // todo take `wgsl_to_wgpu` options as args
+    // todo take `wgsl_to_wgpu` options as args, storing `WriteOptions` in struct
     pub fn new(binding_root_path: &'static str) -> Result<Self, std::io::Error> {
         let bindings_mod_path = Path::new(binding_root_path).join("mod.rs");
         println!("root: {}", bindings_mod_path.display());

@@ -144,7 +144,8 @@ pub fn build_shader_dir(
             .map_err(|e| extension_error(ext, e))?;
     }
 
-    // todo delete all in BINDING_ROOT_PATH before regen add some cashing(if wgsl_to_wgpu does not have it built-in)
+    // todo delete all in BINDING_ROOT_PATH before regen add some cashing(if wgsl_to_wgpu does not have it built-in),
+    // so bindings for deleted shaders are removed
 
     build_all_in_dir(
         shader_path, Path::new(shader_path),
@@ -173,12 +174,6 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                 ext.enter_mod(&dir_path)
                     .map_err(|e| extension_error(ext, e))?;
             }
-            // let dir_name = dir_path.file_stem().unwrap().to_str().unwrap();
-            // writeln!(bindings_mod_file, "pub(crate) mod {};", dir_name)?;
-            // let mut sub_bindings_mod_file = BufWriter::new(std::fs::File::create(format!(
-            //     "src/shader_bindings/{}/mod.rs",
-            //     dir_name
-            // ))?);
 
             build_all_in_dir(root_shader_path, &dir_path, wesl, extensions)?;
 
@@ -198,7 +193,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             }
             println!("cargo::rerun-if-changed={}", entry_path.display());
 
-            // module path from shader folder to entry
+            // module from root(absolute) path to entry
             let mut out_name = entry_path.strip_prefix(root_shader_path)?.to_owned();
             out_name.pop();
             out_name = PathBuf::from(
