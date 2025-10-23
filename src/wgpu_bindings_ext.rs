@@ -25,7 +25,7 @@ pub struct WgpuBindingsExtension<W: Write> {
 impl WgpuBindingsExtension<BufWriter<fs::File>> {
     pub fn new(binding_root_path: &'static str) -> Result<Self, std::io::Error> {
         let bindings_mod_path = Path::new(binding_root_path).join("mod.rs");
-        eprintln!("{}", bindings_mod_path.display());
+        println!("root: {}", bindings_mod_path.display());
 
         Ok(Self {
             binding_root_path,
@@ -46,9 +46,7 @@ pub enum WgpuBindingsError {
 }
 
 impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBindingsExtension<BufWriter<fs::File>> {
-    type ExtensionError = WgpuBindingsError;
-
-    fn name<'n>() -> std::borrow::Cow<'n, str> {
+    fn name<'n>(&self) -> std::borrow::Cow<'n, str> {
         "WgpuBindingsExtension".into()
     }
 
@@ -56,7 +54,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         &mut self,
         _shader_path: &str,
         res: &mut wesl::Wesl<WeslResolver>,
-    ) -> Result<(), Self::ExtensionError> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         res.set_mangler(wesl::ManglerKind::Escape);
 
         writeln!(self.bindings_mod_file, "#![allow(unused)]\n")?;
@@ -64,48 +62,45 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         Ok(())
     }
 
-    fn exit_root(
-        &mut self, _shader_root_path: &str, _res: &wesl::Wesl<WeslResolver>
-    ) -> Result<(), Self::ExtensionError> {
-        Ok(())
-    }
+    fn into_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+        // println!("base: {}", self.bindings_mod_path.display());
 
-    fn into_mod(&mut self, dir_path: &Path) -> Result<(), Self::ExtensionError> {
-        let dir_name = dir_path.file_stem().unwrap().to_str().unwrap();
+        let dir_name = dir_path.file_stem().unwrap().to_str().expect("mod path must be valid UTF-8");
+        writeln!(self.bindings_mod_file, "pub(crate) mod {dir_name};")?;
 
-        writeln!(self.bindings_mod_file, "pub(crate) mod {};", dir_name)?;
-
-        self.bindings_mod_path = PathBuf::from(format!(
-            "src/shader_bindings/{}/mod.rs",
-            dir_name
-        ));
+        // remove last mod
+        self.bindings_mod_path.pop();
+        // move into {dir_name}/"mod.rs
+        self.bindings_mod_path.push(dir_name);
+        self.bindings_mod_path.push("mod.rs");
 
         if let Some(dir_to_mod) = self.bindings_mod_path.parent() {
             fs::create_dir_all(dir_to_mod)?;
         }
+        // println!("creating: {}", self.bindings_mod_path.display());
         let sub_bindings_mod_file = BufWriter::new(std::fs::File::create(&self.bindings_mod_path)?);
         self.bindings_mod_file = sub_bindings_mod_file;
 
         Ok(())
     }
 
-    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Self::ExtensionError> {
-        println!("{}", self.bindings_mod_path.display());
+    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+        // println!("{}", self.bindings_mod_path.display());
         self.bindings_mod_path.pop();
         self.bindings_mod_path.pop();
         self.bindings_mod_path.push("mod.rs");
-        println!("{}", self.bindings_mod_path.display());
+        // println!("{}", self.bindings_mod_path.display());
 
         self.bindings_mod_file = BufWriter::new(std::fs::File::open(&self.bindings_mod_path)?);
 
         Ok(())
     }
 
-    fn post_build(&mut self, mod_path: &ModulePath, wgsl_source_path: &str) -> Result<(), Self::ExtensionError> {
+    fn post_build(&mut self, mod_path: &ModulePath, wgsl_source_path: &str) -> Result<(), Box<dyn std::error::Error>> {
         generate_bindings(
             self.binding_root_path, &mut self.bindings_mod_file,
             mod_path, wgsl_source_path
-        ).into()
+        ).map_err(|e| Box::<_>::from(e))
     }
 }
 

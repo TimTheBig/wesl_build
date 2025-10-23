@@ -15,7 +15,7 @@ fn test_bindings_ext() {
 
     build_shader_dir(
         "./test/src/shaders",
-        &mut [WgpuBindingsExtension::new("./test/src/shader_bindings").unwrap()]
+        &mut [Box::new(WgpuBindingsExtension::new("./test/src/shader_bindings").unwrap())]
     ).unwrap();
 
     // shaders
@@ -24,9 +24,11 @@ fn test_bindings_ext() {
 
     // bindings
     assert!(std::fs::exists("test/src/shader_bindings/mod.rs").unwrap(), "no mod.rs was generated for shader_bindings root mod");
+    assert!(std::fs::exists("test/src/shader_bindings/test_mod/mod.rs").unwrap(), "no mod.rs was generated for shader_bindings test_mod mod");
 
     assert!(std::fs::exists("test/src/shader_bindings/test.rs").unwrap(), "no shader_binding was generated for test.wgsl");
     assert!(std::fs::exists("test/src/shader_bindings/test2.rs").unwrap(), "no shader_binding was generated for test2.wgsl");
+    assert!(std::fs::exists("test/src/shader_bindings/test_mod/test_mod_file.rs").unwrap(), "no shader_binding was generated for test_mod_file.wgsl");
 
     let mut settings = insta::Settings::new();
     // todo use
@@ -38,7 +40,7 @@ fn test_bindings_ext() {
     //     "source path"
     // });
 
-    let test_bindings = ["test/src/shader_bindings/test.rs", "test/src/shader_bindings/test2.rs"];
+    let test_bindings = ["test/src/shader_bindings/test.rs", "test/src/shader_bindings/test2.rs", "test/src/shader_bindings/test_mod/test_mod_file.rs"];
 
     for binding in test_bindings {
         settings.set_input_file(binding);

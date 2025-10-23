@@ -5,7 +5,7 @@ use std::{
 use wesl::{ModulePath, Resolver, StandardResolver, Wesl};
 
 #[cfg(feature = "wgpu_bindings")]
-mod wgpu_bindings_ext;
+pub mod wgpu_bindings_ext;
 
 #[cfg(test)]
 mod tests;
@@ -35,11 +35,10 @@ pub enum WeslBuildError {
     },
 }
 
+/// An extension that runs before and after all shaders are built and after each file is built
 pub trait WeslBuildExtension<WeslResolver: Resolver> {
-    type ExtensionError: std::error::Error + 'static;
-
     /// The name to report in errors as the source extension
-    fn name<'n>() -> Cow<'n, str>;
+    fn name<'n>(&self) -> Cow<'n, str>;
 
     /// The first time the extension is called this is in the root before any files/modules are entered
     ///
@@ -48,7 +47,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     /// * `res` - the wesl resolver being used by wesl_build
     fn init_root(
         &mut self, shader_root_path: &str, res: &mut Wesl<WeslResolver>
-    ) -> Result<(), Self::ExtensionError>;
+    ) -> Result<(), Box<dyn std::error::Error>>;
 
     /// The last time the extension is called this is in the root after all files/modules are covered
     ///
@@ -57,40 +56,46 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     /// * `res` - the wesl resolver being used by wesl_build
     fn exit_root(
         &mut self, shader_root_path: &str, res: &Wesl<WeslResolver>
-    ) -> Result<(), Self::ExtensionError>;
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
 
     /// Go one level into a shader module
     ///
     /// ### Args
     /// * `dir_path` - the current dir of the mod we are entering
-    fn into_mod(&mut self, dir_path: &Path) -> Result<(), Self::ExtensionError>;
+    fn into_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
     /// Go one level out of a shader module
     ///
     /// ### Args
     /// * `dir_path` - the current dir of the mod we are exiting
-    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Self::ExtensionError>;
+    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
 
     /// Run after a `wesl` file is compiled
+    ///
+    /// ### Args
+    /// * `wesl_path` - the path to the wesl file
+    /// * `wgsl_path` - the path to the built wgsl file
     fn post_build(
         &mut self,
-        mod_path: &ModulePath,
-        wgsl_source_path: &str,
-    ) -> Result<(), Self::ExtensionError>;
+        wesl_path: &ModulePath,
+        wgsl_built_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
-fn extension_error<Ext: WeslBuildExtension<Res>, Res: Resolver>(_ext: &Ext, e: Ext::ExtensionError) -> WeslBuildError {
+fn extension_error(ext: &Box<dyn WeslBuildExtension<StandardResolver>>, error: Box<dyn std::error::Error>) -> WeslBuildError {
     WeslBuildError::ExtensionErr {
-        extension_name: Ext::name().into_owned(),
-        error: Box::<_>::from(e)
+        extension_name: ext.name().into_owned(),
+        error,
     }
 }
 
 /// ## Args
-/// * shader_path - Root dir of all your shaders
-/// * binding_root_path - The path to output the rust bindings for shaders
+/// * `shader_path` - Root dir of all your shaders
+/// * `extensions` - An array of extensions you would like to run, see [`WeslBuildExtension`]
 pub fn build_shader_dir(
     shader_path: &str,
-    extensions: &mut [impl WeslBuildExtension<StandardResolver>],
+    extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
 ) -> Result<(), WeslBuildError> {
     let mut wesl = Wesl::new(shader_path);
 
@@ -120,13 +125,14 @@ fn build_all_in_dir<WeslResolver: Resolver>(
     root_shader_path: &str,
     path: &Path,
     wesl: &Wesl<WeslResolver>,
-    mut extensions: &mut [impl WeslBuildExtension<StandardResolver>],
+    mut extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
 ) -> Result<(), WeslBuildError> {
     for entry in std::fs::read_dir(path)?.filter_map(|entry| entry.ok()) {
         if entry.metadata()?.is_dir() {
             // make new mod per dir recurce to use mod structure
             let dir_path = entry.path();
             for ext in extensions.iter_mut() {
+                // println!("running: {}", ext.name());
                 ext.into_mod(&dir_path)
                     .map_err(|e| extension_error(ext, e))?;
             }
