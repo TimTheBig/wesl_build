@@ -15,6 +15,7 @@ fn test_bindings_ext() {
 
     build_shader_dir(
         "./test/src/shaders",
+        wesl::CompileOptions::default(),
         &mut [Box::new(
             WgpuBindingsExtension::new("./test/src/shader_bindings").unwrap(),
         )],

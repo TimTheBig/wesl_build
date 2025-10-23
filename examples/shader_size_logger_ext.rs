@@ -78,6 +78,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WeslSize
 fn main() -> Result<(), WeslBuildError> {
     build_shader_dir(
         "./test/src/shaders",
+        wesl::CompileOptions::default(),
         &mut [
             Box::new(WgpuBindingsExtension::new("binding_root_path").unwrap()),
             Box::new(WeslSizeLogger::new()),

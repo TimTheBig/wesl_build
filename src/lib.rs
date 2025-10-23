@@ -117,14 +117,18 @@ fn extension_error(
 ///     # /*
 ///     "src/shaders",
 ///     # */
+///     wesl::CompileOptions::default(),
 ///     &mut [/* Box::new(Extension::new()) */]
 /// ).expect("Building shaders failed");
 /// ```
 pub fn build_shader_dir(
     shader_path: &str,
+    wesl_config: wesl::CompileOptions,
     extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
 ) -> Result<(), WeslBuildError> {
     let mut wesl = Wesl::new(shader_path);
+    wesl.set_options(wesl_config);
+    // todo allow `use_sourcemap` override
 
     for ext in extensions.iter_mut() {
         ext.init_root(shader_path, &mut wesl)
