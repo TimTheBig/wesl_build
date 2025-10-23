@@ -118,7 +118,7 @@ fn generate_bindings(
     bindings_mod_file: &mut impl Write,
     mod_path: &ModulePath,
     wgsl_source_path: &str,
-) -> Result<(), WgpuBindingsError> {
+) -> Result<(), Box<WgpuBindingsError>> {
     use wgsl_to_wgpu::MatrixVectorTypes;
 
     let wgsl_source = std::fs::read_to_string(wgsl_source_path).unwrap();
@@ -136,7 +136,7 @@ fn generate_bindings(
         &wgsl_source,
         wgsl_source_path,
         options
-    ).unwrap();
+    )?;
 
     let binding_path = format!(
         "{}/{}.rs",
@@ -145,15 +145,17 @@ fn generate_bindings(
     );
     let binding_path = PathBuf::from(binding_path);
 
-    std::fs::create_dir_all(binding_path.parent().unwrap())?;
-    std::fs::write(&binding_path, text.as_bytes())?;
+    std::fs::create_dir_all(binding_path.parent().unwrap())
+        .map_err(|e| Box::<_>::from(WgpuBindingsError::IoErr(e)))?;
+    std::fs::write(&binding_path, text.as_bytes())
+        .map_err(|e| Box::<_>::from(WgpuBindingsError::IoErr(e)))?;
 
     // Add entry to `mod.rs`
     writeln!(
         bindings_mod_file,
         "pub(crate) mod {};",
         binding_path.file_stem().unwrap().to_str().unwrap()
-    )?;
+    ).map_err(|e| Box::<_>::from(WgpuBindingsError::IoErr(e)))?;
 
     Ok(())
 }
@@ -162,7 +164,7 @@ fn create_shader_module(
     wgsl_source: &str,
     wgsl_include_path: &str,
     options: WriteOptions,
-) -> Result<String, wgsl_to_wgpu::CreateModuleError> {
+) -> Result<String, Box<WgpuBindingsError>> {
     let mut root = wgsl_to_wgpu::Module::default();
     root.add_shader_module(
         wgsl_source,
@@ -170,7 +172,7 @@ fn create_shader_module(
         options,
         wgsl_to_wgpu::ModulePath::default(),
         demangle_wesl,
-    )?;
+    ).map_err(|e| Box::from(WgpuBindingsError::from(e)))?;
     Ok(root.to_generated_bindings(options))
 }
 
