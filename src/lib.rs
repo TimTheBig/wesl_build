@@ -19,11 +19,15 @@ mod tests;
 pub fn init_build_logger() {
     use log::LevelFilter;
 
-    env_logger::builder()
+    let could_init = env_logger::builder()
         .filter_level(LevelFilter::Debug)
         .filter_module("naga::front", LevelFilter::Info)
         .format_timestamp(None)
-        .init();
+        .try_init();
+
+    if let Err(could_not_init) = could_init {
+        log::warn!("wesl_build::init_build_logger was called after logger was already initialized: {}", could_not_init);
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -161,7 +165,9 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             // make new mod per dir recurce to use mod structure
             let dir_path = entry.path();
             for ext in extensions.iter_mut() {
-                // println!("running: {}", ext.name());
+                #[cfg(feature = "logging")]
+                log::debug!("running: {}", ext.name());
+
                 ext.enter_mod(&dir_path)
                     .map_err(|e| extension_error(ext, e))?;
             }
@@ -210,6 +216,8 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                     .collect::<Vec<_>>(),
             );
             wesl.build_artifact(&mod_path, out_name_str);
+            #[cfg(feature = "logging")]
+            log::info!("built: {}", &mod_path);
 
             let wgsl_source_path = format!(
                 "{}/{}.wgsl",

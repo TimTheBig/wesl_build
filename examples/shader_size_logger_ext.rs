@@ -1,5 +1,6 @@
 use std::path::Path;
 
+#[cfg(feature = "wgpu_bindings")]
 use wesl_build::wgpu_bindings_ext::WgpuBindingsExtension;
 use wesl_build::{WeslBuildError, WeslBuildExtension, build_shader_dir};
 
@@ -80,6 +81,7 @@ fn main() -> Result<(), WeslBuildError> {
         "./test/src/shaders",
         wesl::CompileOptions::default(),
         &mut [
+            #[cfg(feature = "wgpu_bindings")]
             Box::new(WgpuBindingsExtension::new("binding_root_path").unwrap()),
             Box::new(WeslSizeLogger::new()),
         ],

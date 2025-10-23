@@ -63,8 +63,6 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     }
 
     fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-        // println!("base: {}", self.bindings_mod_path.display());
-
         let dir_name = dir_path.file_stem().unwrap()
             .to_str().expect("mod path must be valid UTF-8");
         writeln!(self.bindings_mod_file, "pub(crate) mod {dir_name};")?;
@@ -78,7 +76,9 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         if let Some(dir_to_mod) = self.bindings_mod_path.parent() {
             fs::create_dir_all(dir_to_mod)?;
         }
-        // println!("creating: {}", self.bindings_mod_path.display());
+        #[cfg(feature = "logging")]
+        log::trace!("creating wgpu binding module for: {}", self.bindings_mod_path.display());
+
         let sub_bindings_mod_file = BufWriter::new(std::fs::File::create(&self.bindings_mod_path)?);
         self.bindings_mod_file = sub_bindings_mod_file;
 
@@ -86,11 +86,15 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     }
 
     fn exit_mod(&mut self, _dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-        // println!("{}", self.bindings_mod_path.display());
         self.bindings_mod_path.pop();
+
+        if let Some(mod_name) = self.bindings_mod_path.file_stem() {
+            #[cfg(feature = "logging")]
+            log::debug!("exiting mod: {}", mod_name.display());
+        }
+
         self.bindings_mod_path.pop();
         self.bindings_mod_path.push("mod.rs");
-        // println!("{}", self.bindings_mod_path.display());
 
         self.bindings_mod_file = BufWriter::new(std::fs::File::open(&self.bindings_mod_path)?);
 

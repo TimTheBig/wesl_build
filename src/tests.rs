@@ -4,14 +4,16 @@ use insta::assert_snapshot;
 use itertools::Itertools;
 
 use super::*;
+#[cfg(feature = "wgpu_bindings")]
 use crate::wgpu_bindings_ext::WgpuBindingsExtension;
 
+#[cfg(feature = "wgpu_bindings")]
 #[test]
 fn test_bindings_ext() {
     std::fs::create_dir_all("./test/src/shader_bindings").unwrap();
 
     #[cfg(feature = "logging")]
-    init_build_logger();
+    crate::init_build_logger();
 
     build_shader_dir(
         "./test/src/shaders",
@@ -25,6 +27,7 @@ fn test_bindings_ext() {
     // shaders
     assert!(std::fs::exists("test/src/shaders/test.wgsl").unwrap(), "test_bindings_ext requires shaders/test.wgsl to exist");
     assert!(std::fs::exists("test/src/shaders/test2.wgsl").unwrap(), "test_bindings_ext requires shaders/test2.wgsl to exist");
+    assert!(std::fs::exists("test/src/shaders/test_mod/test_mod_file.wgsl").unwrap(), "test_bindings_ext requires shaders/test_mod/test_mod_file.wgsl to exist");
 
     // bindings
     assert!(std::fs::exists("test/src/shader_bindings/mod.rs").unwrap(), "no mod.rs was generated for shader_bindings root mod");
@@ -60,4 +63,22 @@ fn test_bindings_ext() {
                 .collect::<String>()
         ));
     }
+}
+
+#[test]
+fn test_build_shader_dir() {
+    #[cfg(feature = "logging")]
+    crate::init_build_logger();
+
+    build_shader_dir(
+        "./test/src/shaders",
+        wesl::CompileOptions::default(),
+        &mut [],
+    )
+    .unwrap();
+
+    // shaders
+    assert!(std::fs::exists("test/src/shaders/test.wgsl").unwrap(), "test_bindings_ext requires shaders/test.wgsl to exist");
+    assert!(std::fs::exists("test/src/shaders/test2.wgsl").unwrap(), "test_bindings_ext requires shaders/test2.wgsl to exist");
+    assert!(std::fs::exists("test/src/shaders/test_mod/test_mod_file.wgsl").unwrap(), "test_bindings_ext requires shaders/test_mod/test_mod_file.wgsl to exist");
 }
