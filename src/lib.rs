@@ -14,7 +14,9 @@ pub mod wgpu_bindings_ext;
 #[cfg(test)]
 mod tests;
 
-/// Init logging for better error msgs
+/// Init logging for better error messages
+///
+/// Note: To ensure color output set `RUST_LOG_STYLE=always`
 #[cfg(feature = "logging")]
 pub fn init_build_logger() {
     use log::LevelFilter;
@@ -135,6 +137,9 @@ pub fn build_shader_dir(
     // todo allow `use_sourcemap` override
 
     for ext in extensions.iter_mut() {
+        #[cfg(feature = "logging")]
+        log::debug!("initializing: {}", ext.name());
+
         ext.init_root(shader_path, &mut wesl)
             .map_err(|e| extension_error(ext, e))?;
     }
@@ -165,9 +170,6 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             // make new mod per dir recurce to use mod structure
             let dir_path = entry.path();
             for ext in extensions.iter_mut() {
-                #[cfg(feature = "logging")]
-                log::debug!("running: {}", ext.name());
-
                 ext.enter_mod(&dir_path)
                     .map_err(|e| extension_error(ext, e))?;
             }
