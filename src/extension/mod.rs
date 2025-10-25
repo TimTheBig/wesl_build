@@ -10,7 +10,15 @@ use crate::WeslBuildError;
 #[cfg(feature = "wgpu_bindings")]
 pub mod wgpu_bindings;
 
+#[cfg(feature = "wgsl_minifier")]
+pub mod wgsl_minifier;
+
 /// An extension that runs before and after all shaders are built and after each file is built
+///
+/// Extensions are **always** run one at a time (sequentially)
+/// so they can replace `wgsl_built_path` post-build with there output.
+/// But the order is set by how the user orders them,
+/// if your extension needs to run before/after extensions that changes something it must be documented
 pub trait WeslBuildExtension<WeslResolver: Resolver> {
     /// The name to report in errors as the source extension
     fn name<'n>(&self) -> Cow<'n, str>;
@@ -54,7 +62,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     ///
     /// ### Args
     /// * `wesl_path` - the path to the wesl file
-    /// * `wgsl_path` - the path to the built wgsl file
+    /// * `wgsl_built_path` - the path to the built wgsl file
     fn post_build(
         &mut self,
         wesl_path: &ModulePath,

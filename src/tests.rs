@@ -65,6 +65,27 @@ fn test_bindings_ext() {
     }
 }
 
+#[cfg(feature = "wgsl_minifier")]
+#[test]
+fn test_minifier_ext() {
+    #[cfg(feature = "logging")]
+    crate::init_build_logger();
+
+    build_shader_dir(
+        "./test/src/shaders",
+        wesl::CompileOptions::default(),
+        &mut [Box::new(crate::extension::wgsl_minifier::WgslMinifierExtension { release_only: false })],
+    )
+    .unwrap();
+
+    // shaders
+    assert!(std::fs::exists("test/src/shaders/test.wgsl").unwrap(), "test_bindings_ext requires shaders/test.wgsl to exist");
+    assert!(std::fs::exists("test/src/shaders/test2.wgsl").unwrap(), "test_bindings_ext requires shaders/test2.wgsl to exist");
+    assert!(std::fs::exists("test/src/shaders/test_mod/test_mod_file.wgsl").unwrap(), "test_bindings_ext requires shaders/test_mod/test_mod_file.wgsl to exist");
+
+    // todo test that output size is <= pre-minification, using extension to log before size and another for after size
+}
+
 #[test]
 fn test_build_shader_dir() {
     #[cfg(feature = "logging")]
