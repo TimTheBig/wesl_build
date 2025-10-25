@@ -80,7 +80,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         #[cfg(feature = "logging")]
         log::trace!("creating wgpu binding module for: {}", self.bindings_mod_path.display());
 
-        let sub_bindings_mod_file = BufWriter::new(std::fs::File::create(&self.bindings_mod_path)?);
+        let sub_bindings_mod_file = BufWriter::new(fs::File::create(&self.bindings_mod_path)?);
         self.bindings_mod_file = sub_bindings_mod_file;
 
         Ok(())
@@ -89,15 +89,15 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     fn exit_mod(&mut self, _dir_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         self.bindings_mod_path.pop();
 
+        #[cfg(feature = "logging")]
         if let Some(mod_name) = self.bindings_mod_path.file_stem() {
-            #[cfg(feature = "logging")]
             log::debug!("exiting mod: {}", mod_name.display());
         }
 
         self.bindings_mod_path.pop();
         self.bindings_mod_path.push("mod.rs");
 
-        self.bindings_mod_file = BufWriter::new(std::fs::File::open(&self.bindings_mod_path)?);
+        self.bindings_mod_file = BufWriter::new(fs::File::open(&self.bindings_mod_path)?);
 
         Ok(())
     }
@@ -126,7 +126,7 @@ fn generate_bindings(
 ) -> Result<(), Box<WgpuBindingsError>> {
     use wgsl_to_wgpu::MatrixVectorTypes;
 
-    let wgsl_source = std::fs::read_to_string(wgsl_source_path)
+    let wgsl_source = fs::read_to_string(wgsl_source_path)
         .map_err(|e| Box::new(WgpuBindingsError::IoErr(e)))?;
 
     // Configure the output based on the dependencies for the project
@@ -151,10 +151,10 @@ fn generate_bindings(
     );
     let binding_path = PathBuf::from(binding_path);
 
-    std::fs::create_dir_all(
+    fs::create_dir_all(
         binding_path.parent().expect("binding must have a parent mod or be in root")
     ).map_err(|e| Box::from(WgpuBindingsError::IoErr(e)))?;
-    std::fs::write(&binding_path, text.as_bytes())
+    fs::write(&binding_path, text.as_bytes())
         .map_err(|e| Box::from(WgpuBindingsError::IoErr(e)))?;
 
     // Add entry to `mod.rs`

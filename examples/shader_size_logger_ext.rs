@@ -1,8 +1,8 @@
 use std::path::Path;
 
 #[cfg(feature = "wgpu_bindings")]
-use wesl_build::wgpu_bindings_ext::WgpuBindingsExtension;
-use wesl_build::{WeslBuildError, WeslBuildExtension, build_shader_dir};
+use wesl_build::extension::wgpu_bindings::WgpuBindingsExtension;
+use wesl_build::{WeslBuildError, extension::WeslBuildExtension, build_shader_dir};
 
 use wesl::Wesl;
 

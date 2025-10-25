@@ -5,7 +5,7 @@ use itertools::Itertools;
 
 use super::*;
 #[cfg(feature = "wgpu_bindings")]
-use crate::wgpu_bindings_ext::WgpuBindingsExtension;
+use crate::extension::wgpu_bindings::WgpuBindingsExtension;
 
 #[cfg(feature = "wgpu_bindings")]
 #[test]

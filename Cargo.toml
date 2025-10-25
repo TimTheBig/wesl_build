@@ -18,12 +18,14 @@ wgpu_bindings = ["dep:wgsl_to_wgpu"]
 [dependencies]
 wesl = "0.2"
 
-wgsl_to_wgpu = { version = "0.16", optional = true }
-
+# logging
 env_logger = { version = "0.11", features = ["auto-color"], default-features = false, optional = true }
 log = { version = "0.4", optional = true }
-
+# errors
 thiserror = "2.0"
+
+# extentions
+wgsl_to_wgpu = { version = "0.16", optional = true }
 
 [dev-dependencies]
 insta = "1.43"

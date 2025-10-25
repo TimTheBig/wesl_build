@@ -1,18 +1,31 @@
 #![doc = include_str!("../README.md")]
 
 use std::{
-    borrow::Cow,
     ffi::OsStr,
     path::{Path, PathBuf},
 };
 
 use wesl::{ModulePath, Resolver, StandardResolver, Wesl};
 
-#[cfg(feature = "wgpu_bindings")]
-pub mod wgpu_bindings_ext;
+pub mod extension;
+use extension::{WeslBuildExtension, extension_error};
 
 #[cfg(test)]
 mod tests;
+
+/// An error from some stage of the build system, possibly from an extension
+#[derive(Debug, thiserror::Error)]
+pub enum WeslBuildError {
+    #[error(transparent)]
+    IoErr(#[from] std::io::Error),
+    #[error(transparent)]
+    StripPrefixErr(#[from] std::path::StripPrefixError),
+    #[error("Extension {} error: {}", .extension_name, .error)]
+    ExtensionErr {
+        extension_name: String,
+        error: Box<dyn std::error::Error>,
+    },
+}
 
 /// Init logging for better error messages
 ///
@@ -32,91 +45,17 @@ pub fn init_build_logger() {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum WeslBuildError {
-    #[error(transparent)]
-    IoErr(#[from] std::io::Error),
-    #[error(transparent)]
-    StripPrefixErr(#[from] std::path::StripPrefixError),
-    #[error("Extension {} error: {}", .extension_name, .error)]
-    ExtensionErr {
-        extension_name: String,
-        error: Box<dyn std::error::Error>,
-    },
-}
-
-/// An extension that runs before and after all shaders are built and after each file is built
-pub trait WeslBuildExtension<WeslResolver: Resolver> {
-    /// The name to report in errors as the source extension
-    fn name<'n>(&self) -> Cow<'n, str>;
-
-    /// The first time the extension is called this is in the root before any files/modules are entered
-    ///
-    /// ### Args
-    /// * `shader_path` - the root dir of the shaders we are building
-    /// * `res` - the wesl resolver being used by wesl_build
-    fn init_root(
-        &mut self,
-        shader_root_path: &str,
-        res: &mut Wesl<WeslResolver>,
-    ) -> Result<(), Box<dyn std::error::Error>>;
-
-    /// The last time the extension is called this is in the root after all files/modules are covered
-    ///
-    /// ### Args
-    /// * `shader_path` - the root dir of the shaders we are building
-    /// * `res` - the wesl resolver being used by wesl_build
-    fn exit_root(
-        &mut self,
-        _shader_root_path: &str,
-        _res: &Wesl<WeslResolver>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
-    }
-
-    /// Go one level into a shader module
-    ///
-    /// ### Args
-    /// * `dir_path` - the current dir of the mod we are entering
-    fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
-    /// Go one level out of a shader module
-    ///
-    /// ### Args
-    /// * `dir_path` - the current dir of the mod we are exiting
-    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
-
-    /// Run after a `wesl` file is compiled
-    ///
-    /// ### Args
-    /// * `wesl_path` - the path to the wesl file
-    /// * `wgsl_path` - the path to the built wgsl file
-    fn post_build(
-        &mut self,
-        wesl_path: &ModulePath,
-        wgsl_built_path: &str,
-    ) -> Result<(), Box<dyn std::error::Error>>;
-}
-
-fn extension_error(
-    ext: &Box<dyn WeslBuildExtension<StandardResolver>>,
-    error: Box<dyn std::error::Error>,
-) -> WeslBuildError {
-    WeslBuildError::ExtensionErr {
-        extension_name: ext.name().into_owned(),
-        error,
-    }
-}
-
 /// A simple and extensible build system for wesl
 ///
 /// ## Args
 /// * `shader_path` - Root dir of all your shaders
-/// * `extensions` - An array of extensions you would like to run, see [`WeslBuildExtension`]
+/// * `extensions` - An array of extensions you would like to run, see [`WeslBuildExtension`](`extension::WeslBuildExtension`)
 ///
 /// ## Example
 /// In `build.rs`:
 /// ```
-/// use wesl_build::{build_shader_dir, WeslBuildError, WeslBuildExtension};
+/// use wesl_build::{build_shader_dir, WeslBuildError};
+/// use wesl_build::extension::WeslBuildExtension;
 ///
 /// build_shader_dir(
 ///     # "test/src/shaders",
