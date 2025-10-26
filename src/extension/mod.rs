@@ -13,6 +13,34 @@ pub mod wgpu_bindings;
 #[cfg(feature = "wgsl_minifier")]
 pub mod wgsl_minifier;
 
+/// A utility that improves the readability of the extensions input into [`build_shader_dir`](`crate::build_shader_dir`)
+///
+/// ## Example
+/// ```no_run
+/// use wesl_build::{build_shader_dir, WeslBuildError};
+/// use wesl_build::{extensions, extension::{WeslBuildExtension, wgpu_bindings::WgpuBindingsExtension}};
+///
+/// build_shader_dir(
+///     "test/src/shaders",
+///     wesl::CompileOptions::default(),
+///     extensions![
+///         WgpuBindingsExtension::new("test/src/shader_bindings").unwrap(),
+//          # Test multiple inputs
+///         # WgpuBindingsExtension::new("test/src/shader_bindings").unwrap()
+///     ],
+/// ).expect("Building shaders failed");
+/// ```
+#[macro_export]
+macro_rules! extensions {
+    () => (
+        &mut []
+    );
+    // box inputs
+    ($($ext:expr),+ $(,)?) => (
+        &mut [$(::std::boxed::Box::new($ext)),+]
+    );
+}
+
 /// An extension that runs before and after all shaders are built and after each file is built
 ///
 /// Extensions are **always** run one at a time (sequentially)

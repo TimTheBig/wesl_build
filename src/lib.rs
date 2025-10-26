@@ -55,7 +55,7 @@ pub fn init_build_logger() {
 /// In `build.rs`:
 /// ```
 /// use wesl_build::{build_shader_dir, WeslBuildError};
-/// use wesl_build::extension::WeslBuildExtension;
+/// use wesl_build::{extensions, extension::WeslBuildExtension};
 ///
 /// build_shader_dir(
 ///     # "test/src/shaders",
@@ -63,7 +63,7 @@ pub fn init_build_logger() {
 ///     "src/shaders",
 ///     # */
 ///     wesl::CompileOptions::default(),
-///     &mut [/* Box::new(Extension::new()) */]
+///     extensions![/* Extension::new() */]
 /// ).expect("Building shaders failed");
 /// ```
 pub fn build_shader_dir(

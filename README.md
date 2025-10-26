@@ -9,10 +9,10 @@ cargo add wesl_build --build
 In `build.rs`:
 ```rs
 use wesl_build::{build_shader_dir, WeslBuildError};
-use wesl_build::extension::WeslBuildExtension;
+use wesl_build::{extensions, extension::WeslBuildExtension};
 
 fn main() {
-    build_shader_dir("src/shaders", &mut [/* Box::new(Extension::new()) */]).expect("Building shaders failed");
+    build_shader_dir("src/shaders", extensions![/* Extension::new() */]).expect("Building shaders failed");
 }
 ```
 
