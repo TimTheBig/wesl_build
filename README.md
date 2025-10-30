@@ -17,3 +17,16 @@ fn main() {
 ```
 
 Now all shaders in `src/shaders` will be compiled with subdirectories accting as modules
+
+## Faster Shader Build Times
+
+For faster builds add this to your Cargo.toml, it will speed up builds after the first one:
+```toml
+[profile.dev.package."wesl"]
+opt-level = 3
+[profile.dev.package."naga"]
+opt-level = 3
+# optional
+[profile.dev.package."wesl_build"]
+opt-level = 3
+```
