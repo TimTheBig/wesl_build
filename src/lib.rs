@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use wesl::{ModulePath, Resolver, StandardResolver, Wesl};
+use wesl::{Mangler, ModulePath, Resolver, StandardResolver, Wesl};
 
 pub mod extension;
 use extension::{WeslBuildExtension, extension_error};
@@ -86,15 +86,24 @@ pub fn build_shader_dir(
     // todo delete all in BINDING_ROOT_PATH before regen add some cashing(if wgsl_to_wgpu does not have it built-in),
     // so bindings for deleted shaders are removed
 
-    build_all_in_dir(
+    build_all_in_dir::<StandardResolver>(
         shader_path, Path::new(shader_path),
         &wesl, extensions,
+        &wesl,
     )?;
 
     for ext in extensions.iter_mut() {
         ext.exit_root(shader_path, &wesl)
             .map_err(|e| extension_error(ext, e))?;
     }
+
+    // output shader_path to OUT_DIR/wesl_build_tree.path
+    // std::fs::write(
+    //     PathBuf::from(std::env::var_os("OUT_DIR").expect("wesl_build must be run in build.rs or in an env with the OUT_DIR environment variable set")).join("wesl_build_tree.path"),
+    //     shader_path,
+    // )?;
+    // This env var should only used by wesl_build_import's derive macro after build scripts are run
+    unsafe { std::env::set_var("WESL_BUILD_DIR_ROOT_PATH", shader_path) };
 
     Ok(())
 }
@@ -104,6 +113,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
     path: &Path,
     wesl: &Wesl<WeslResolver>,
     extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
+    res: &Wesl<WeslResolver>,
 ) -> Result<(), WeslBuildError> {
     for entry in std::fs::read_dir(path)?.filter_map(|entry| entry.ok()) {
         if entry.metadata()?.is_dir() {
@@ -114,7 +124,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                     .map_err(|e| extension_error(ext, e))?;
             }
 
-            build_all_in_dir(root_shader_path, &dir_path, wesl, extensions)?;
+            build_all_in_dir(root_shader_path, &dir_path, wesl, extensions, res)?;
 
             if path != Path::new(root_shader_path) {
                 for ext in extensions.iter_mut() {
@@ -142,6 +152,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                     )
                     .to_str()
                     .unwrap()
+                    // todo mangle in place of :: use wesl mangler
                     .replace('/', "::"),
             );
 
@@ -153,7 +164,15 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                     .map(|str| str.to_owned())
                     .collect::<Vec<_>>(),
             );
-            wesl.build_artifact(&mod_path, out_name_str);
+            // wesl::emit_rerun_if_changed(&[mod_path], res);
+
+            // !! keep in sync with mangler used in wesl_build_import !!
+            let name_mangler = wesl::EscapeMangler;
+
+            wesl.build_artifact(&mod_path, &name_mangler.mangle(
+                &mod_path,
+                out_name.file_stem().map(|os_str| os_str.to_str()).flatten().unwrap()
+            ));
             #[cfg(feature = "logging")]
             log::info!("built: {}", &mod_path);
 

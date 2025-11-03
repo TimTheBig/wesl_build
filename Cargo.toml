@@ -10,6 +10,12 @@ repository = "https://github.com/TimTheBig/wesl_build"
 keywords = ["wesl", "build", "system", "bindings"]
 categories = ["development-tools::build-utils", "graphics"]
 
+[workspace]
+members = [".", "wesl_build_import", "wesl_build_example"]
+
+[workspace.dependencies]
+wesl = "0.2"
+
 [features]
 default = ["wgpu_bindings"]
 logging = ["dep:env_logger", "dep:log"]
@@ -17,7 +23,7 @@ wgpu_bindings = ["dep:wgsl_to_wgpu"]
 wgsl_minifier = ["dep:wgsl-minifier", "dep:naga"]
 
 [dependencies]
-wesl = "0.2"
+wesl.workspace = true
 
 # logging
 env_logger = { version = "0.11", features = ["auto-color"], default-features = false, optional = true }

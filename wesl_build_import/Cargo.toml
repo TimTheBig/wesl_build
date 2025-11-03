@@ -1,0 +1,21 @@
+[package]
+name = "wesl_build_import"
+version = "0.1.0"
+edition = "2024"
+description = "The part of wesl_build that includes shaders in your program"
+license = "MIT OR Apache-2.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+# shader name manger
+wesl.workspace = true
+# module graph for path errors
+petgraph = "0.8"
+
+# macro
+syn = "2.0"
+proc-macro2 = "1.0"
+quote = "1.0"
+proc-macro-error2 = "2.0"
