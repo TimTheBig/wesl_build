@@ -8,12 +8,14 @@ use wesl::Wesl;
 
 struct WeslSizeLogger {
     messages: Vec<String>,
+    shader_root_path: String,
 }
 
 impl WeslSizeLogger {
     fn new() -> Self {
         Self {
             messages: Vec::new(),
+            shader_root_path: String::new(),
         }
     }
 }
@@ -25,9 +27,11 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WeslSize
 
     fn init_root(
         &mut self,
-        _shader_root_path: &str,
+        shader_root_path: &str,
         _res: &mut Wesl<WeslResolver>,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        self.shader_root_path = shader_root_path.to_owned();
+
         Ok(())
     }
 
@@ -60,7 +64,8 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WeslSize
     ) -> Result<(), Box<dyn std::error::Error>> {
         let name = wesl_path.last().expect("file must have an element in path");
 
-        let source_lines = std::fs::read_to_string(wesl_path.to_path_buf())?
+        // ModulePath::to_path_buf adds a prefix '/' to absolute paths
+        let source_lines = std::fs::read_to_string(format!("{}{}", self.shader_root_path, wesl_path.to_path_buf().display()))?
             .lines()
             .count();
         let built_lines = std::fs::read_to_string(wgsl_built_path)?
