@@ -180,7 +180,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             let wgsl_source_path = format!(
                 "{}/{}.wgsl",
                 std::env::var("OUT_DIR").expect(
-                    "OUT_DIR env var must be set by cargo"/* any project with a build.rs will have this set */
+                    "OUT_DIR env var must be set by cargo, any project with a build.rs will have this set"
                 ),
                 mangled_name,
             );
