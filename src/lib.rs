@@ -168,11 +168,12 @@ fn build_all_in_dir<WeslResolver: Resolver>(
 
             // !! keep in sync with mangler used in wesl_build_import !!
             let name_mangler = wesl::EscapeMangler;
-
-            wesl.build_artifact(&mod_path, &name_mangler.mangle(
+            let mangled_name = &name_mangler.mangle(
                 &mod_path,
                 out_name.file_stem().map(|os_str| os_str.to_str()).flatten().unwrap()
-            ));
+            );
+
+            wesl.build_artifact(&mod_path, &mangled_name);
             #[cfg(feature = "logging")]
             log::info!("built: {}", &mod_path);
 
@@ -181,7 +182,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                 std::env::var("OUT_DIR").expect(
                     "OUT_DIR env var must be set by cargo"/* any project with a build.rs will have this set */
                 ),
-                out_name_str
+                mangled_name,
             );
 
             for ext in &mut *extensions {
