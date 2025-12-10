@@ -1,0 +1,14 @@
+[package]
+name = "wesl_build_example"
+version = "0.1.0"
+edition = "2024"
+
+publish = false
+
+[dependencies]
+wesl_build_import = { version = "*", path = "../wesl_build_import" }
+
+[build-dependencies]
+wesl.workspace = true
+
+wesl_build = { version = "*", path = "../" }
