@@ -1,6 +1,6 @@
 [package]
 name = "wesl_build"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 
@@ -14,7 +14,7 @@ categories = ["development-tools::build-utils", "graphics"]
 members = [".", "wesl_build_import", "wesl_build_example"]
 
 [workspace.dependencies]
-wesl = "0.2"
+wesl = "0.3"
 
 [features]
 default = ["wgpu_bindings"]
@@ -33,11 +33,11 @@ thiserror = "2.0"
 
 # extentions
 wgsl_to_wgpu = { version = "0.16", optional = true }
-wgsl-minifier = { version = "0.7.0", git = "https://github.com/TimTheBig/wgsl-minifier.git", optional = true }
+wgsl-minifier = { version = "0.7", git = "https://github.com/TimTheBig/wgsl-minifier.git", optional = true }
 naga = { version = "27.0", optional = true , features = ["wgsl-in", "wgsl-out"] }
 
 [dev-dependencies]
-insta = "1.43"
+insta = "1.44"
 itertools = "0.14"
 
 [profile.dev.package.insta]
