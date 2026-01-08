@@ -1,8 +1,27 @@
 ---
 source: src/tests.rs
-expression: "read_to_string(binding).unwrap().lines().skip(3).interleave_shortest(once(\"\\n\").cycle()).collect::<String>()"
+expression: "{\n    let binding_file = read_to_string(binding).unwrap(); let source_line_num =\n    binding_file.lines().find_position(|line|\n    line.contains(\"pub const SOURCE\")).unwrap();\n    binding_file.lines().enumerate().filter(|(i, _)|\n    !(source_line_num.0..source_line_num.0 +\n    3).contains(i)).map(|(_, l)|\n    l).interleave_shortest(once(\"\\n\").cycle()).collect::<String>().replace(env!(\"HOME\"),\n    \"~\")\n}"
 input_file: test/src/shader_bindings/test2.rs
 ---
+pub mod compute {
+    pub const MAIN_WORKGROUP_SIZE: [u32; 3] = [5, 6, 1];
+    pub fn create_main_pipeline(device: &wgpu::Device) -> wgpu::ComputePipeline {
+        let module = super::create_shader_module(device);
+        let layout = super::create_pipeline_layout(device);
+        device
+            .create_compute_pipeline(
+                &wgpu::ComputePipelineDescriptor {
+                    label: Some("Compute Pipeline main"),
+                    layout: Some(&layout),
+                    module: &module,
+                    entry_point: Some("main"),
+                    compilation_options: Default::default(),
+                    cache: Default::default(),
+                },
+            )
+    }
+}
+pub const ENTRY_MAIN: &str = "main";
 pub fn create_shader_module(device: &wgpu::Device) -> wgpu::ShaderModule {
     let source = std::borrow::Cow::Borrowed(SOURCE);
     device
@@ -17,7 +36,7 @@ pub fn create_pipeline_layout(device: &wgpu::Device) -> wgpu::PipelineLayout {
             &wgpu::PipelineLayoutDescriptor {
                 label: None,
                 bind_group_layouts: &[],
-                push_constant_ranges: &[],
+                immediate_size: 0,
             },
         )
 }

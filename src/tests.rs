@@ -55,13 +55,20 @@ fn test_bindings_ext() {
 
     for binding in test_bindings {
         settings.set_input_file(binding);
-        settings.bind(|| assert_snapshot!(
-            read_to_string(binding).unwrap()
-                // skip `SOURCE` const
-                .lines().skip(3)
+        settings.bind(|| assert_snapshot!({
+            let binding_file = read_to_string(binding).unwrap();
+            // remove `SOURCE` const
+            let source_line_num = binding_file.lines()
+                .find_position(|line| line.contains("pub const SOURCE")).unwrap();
+            binding_file.lines().enumerate()
+                .filter(|(i, _)| !(source_line_num.0..source_line_num.0 + 3).contains(i))
+                // de-enumerate
+                .map(|(_, l)| l)
                 .interleave_shortest(once("\n").cycle())
                 .collect::<String>()
-        ));
+                // if HOME is still in there somehow remove it just to be safe
+                .replace(env!("HOME"), "~")
+        }));
     }
 }
 
