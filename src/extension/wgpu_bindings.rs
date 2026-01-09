@@ -1,8 +1,8 @@
 #![cfg(feature = "wgpu_bindings")]
 
+use std::fmt::Display;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
-use std::{fs, path::Path};
+use std::{fs, path::{Path, PathBuf}};
 
 use wesl::Mangler;
 use wesl::ModulePath;
@@ -40,10 +40,24 @@ impl WgpuBindingsExtension<BufWriter<fs::File>> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum WgpuBindingsError {
-    #[error(transparent)]
     IoErr(#[from] std::io::Error),
-    #[error(transparent)]
-    CreateBindingsModuleErr(#[from] wgsl_to_wgpu::CreateModuleError),
+    CreateBindingsModuleErr {
+        inner: wgsl_to_wgpu::CreateModuleError,
+        wgsl_source: String,
+        path: PathBuf,
+    },
+}
+
+impl Display for WgpuBindingsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WgpuBindingsError::IoErr(io_err) => io_err.fmt(f),
+            // use `emit_to_string_with_path` for output with span and labels
+            // todo use source map to modify span and path
+            WgpuBindingsError::CreateBindingsModuleErr { inner, wgsl_source, path } =>
+                inner.emit_to_string_with_path(wgsl_source, path).fmt(f),
+        }
+    }
 }
 
 impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBindingsExtension<BufWriter<fs::File>> {
@@ -117,7 +131,6 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
     }
 }
 
-#[cfg(feature = "wgpu_bindings")]
 fn generate_bindings(
     binding_root_path: &str,
     bindings_mod_file: &mut impl Write,
@@ -180,11 +193,12 @@ fn create_shader_module(
         options,
         wgsl_to_wgpu::ModulePath::default(),
         demangle_wesl,
-    ).map_err(|e| Box::from(WgpuBindingsError::from(e)))?;
+    ).map_err(|e| Box::from(WgpuBindingsError::CreateBindingsModuleErr {
+        inner: e, wgsl_source: wgsl_source.to_owned(), path: PathBuf::from(wgsl_include_path)
+    }))?;
     Ok(root.to_generated_bindings(options))
 }
 
-#[cfg(feature = "wgpu_bindings")]
 fn demangle_wesl(name: &str) -> wgsl_to_wgpu::TypePath {
     // todo handle `super` paths
     // Assume all paths are absolute paths.
