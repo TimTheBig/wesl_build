@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use wesl::{Mangler, ModulePath, Resolver, StandardResolver, Wesl};
+use wesl::{BasicSourceMap, Mangler, ModulePath, Resolver, StandardResolver, Wesl, syntax::Span};
 
 pub mod extension;
 use extension::{WeslBuildExtension, extension_error};
@@ -173,7 +173,9 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                 out_name.file_stem().map(|os_str| os_str.to_str()).flatten().unwrap()
             );
 
-            wesl.build_artifact(&mod_path, &mangled_name);
+            let source_map = build_artifact(
+                wesl, &mod_path, &mangled_name
+            );
             #[cfg(feature = "logging")]
             log::info!("built: {}", &mod_path);
 
@@ -186,11 +188,41 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             );
 
             for ext in &mut *extensions {
-                ext.post_build(&mod_path, &wgsl_source_path)
+                ext.post_build(&mod_path, &wgsl_source_path, &source_map)
                     .map_err(|e| extension_error(ext, e))?;
             }
         }
     }
 
     Ok(())
+}
+
+/// Compile a WESL program from a root file and output the result in Rust's `OUT_DIR`.
+///
+/// This function is meant to be used in a `build.rs` workflow. The output WGSL will
+/// be accessed with the [`include_wesl`] macro. See the crate documentation for a
+/// usage example.
+///
+/// * The first argument is the path to the root module relative to the base
+///   directory.
+/// * The second argument is the name of the artifact, used in [`include_wesl`].
+///
+/// Will emit `rerun-if-changed` instructions so the build script reruns only if the
+/// shader files are modified.
+///
+/// # Panics
+/// Panics when compilation fails or if the output file cannot be written.
+/// Pretty-prints the WESL error message to stderr.
+fn build_artifact(res: &Wesl<impl Resolver>, root: &ModulePath, artifact_name: &str) -> Option<BasicSourceMap> {
+    let compiled = res
+        .compile(root)
+        .inspect_err(|e| {
+            eprintln!("failed to build WESL shader `{root}`.\n{e}");
+            panic!();
+        })
+        .unwrap();
+    wesl::emit_rerun_if_changed(&compiled.modules, &res.resolver());
+    compiled.write_artifact(artifact_name);
+
+    compiled.sourcemap
 }

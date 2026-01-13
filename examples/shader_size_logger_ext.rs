@@ -1,10 +1,10 @@
 use std::path::Path;
 
-#[cfg(feature = "wgpu_bindings")]
+#[cfg(feature = "wgpu_bindings_ext")]
 use wesl_build::extension::wgpu_bindings::WgpuBindingsExtension;
 use wesl_build::{WeslBuildError, extension::WeslBuildExtension, build_shader_dir};
 
-use wesl::Wesl;
+use wesl::{BasicSourceMap, Wesl};
 
 struct WeslSizeLogger {
     messages: Vec<String>,
@@ -61,6 +61,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WeslSize
         &mut self,
         wesl_path: &wesl::ModulePath,
         wgsl_built_path: &str,
+        _source_map: &Option<BasicSourceMap>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let name = wesl_path.last().expect("file must have an element in path");
 
@@ -84,7 +85,7 @@ fn main() -> Result<(), WeslBuildError> {
         "./test/src/shaders",
         wesl::CompileOptions::default(),
         &mut [
-            #[cfg(feature = "wgpu_bindings")]
+            #[cfg(feature = "wgpu_bindings_ext")]
             Box::new(WgpuBindingsExtension::new("binding_root_path").unwrap()),
             Box::new(WeslSizeLogger::new()),
         ],

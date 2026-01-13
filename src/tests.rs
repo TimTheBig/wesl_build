@@ -4,10 +4,11 @@ use insta::assert_snapshot;
 use itertools::Itertools;
 
 use super::*;
-#[cfg(feature = "wgpu_bindings")]
+
+#[cfg(feature = "wgpu_bindings_ext")]
 use crate::extension::wgpu_bindings::WgpuBindingsExtension;
 
-#[cfg(feature = "wgpu_bindings")]
+#[cfg(feature = "wgpu_bindings_ext")]
 #[test]
 fn test_bindings_ext() {
     std::fs::create_dir_all("./test/src/shader_bindings").unwrap();
@@ -72,7 +73,7 @@ fn test_bindings_ext() {
     }
 }
 
-#[cfg(feature = "wgsl_minifier")]
+#[cfg(feature = "wgsl_minifier_ext")]
 #[test]
 fn test_minifier_ext() {
     #[cfg(feature = "logging")]

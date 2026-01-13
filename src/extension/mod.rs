@@ -3,14 +3,14 @@ use std::{
     path::Path,
 };
 
-use wesl::{ModulePath, Resolver, StandardResolver, Wesl};
+use wesl::{BasicSourceMap, ModulePath, Resolver, StandardResolver, Wesl};
 
 use crate::WeslBuildError;
 
-#[cfg(feature = "wgpu_bindings")]
+#[cfg(feature = "wgpu_bindings_ext")]
 pub mod wgpu_bindings;
 
-#[cfg(feature = "wgsl_minifier")]
+#[cfg(feature = "wgsl_minifier_ext")]
 pub mod wgsl_minifier;
 
 /// A utility that improves the readability of the extensions input into [`build_shader_dir`](`crate::build_shader_dir`)
@@ -95,6 +95,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
         &mut self,
         wesl_path: &ModulePath,
         wgsl_built_path: &str,
+        source_map: &Option<BasicSourceMap>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 

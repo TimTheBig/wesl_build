@@ -1,8 +1,8 @@
-#![cfg(feature = "wgsl_minifier")]
+#![cfg(feature = "wgsl_minifier_ext")]
 
 use std::{fs, path::Path};
 
-use wesl::ModulePath;
+use wesl::{ModulePath, BasicSourceMap};
 
 use crate::WeslBuildExtension;
 
@@ -30,6 +30,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgslMini
         &mut self,
         _mod_path: &ModulePath,
         wgsl_source_path: &str,
+        _source_map: &Option<BasicSourceMap>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if self.release_only {
             let profile = std::env::var("PROFILE")?;

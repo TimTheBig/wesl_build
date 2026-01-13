@@ -17,10 +17,10 @@ members = [".", "wesl_build_import", "wesl_build_example"]
 wesl = "0.3"
 
 [features]
-default = ["wgpu_bindings"]
+default = ["wgpu_bindings_ext"]
 logging = ["dep:env_logger", "dep:log"]
-wgpu_bindings = ["dep:wgsl_to_wgpu"]
-wgsl_minifier = ["dep:wgsl-minifier", "dep:naga"]
+wgpu_bindings_ext = ["dep:wgsl_to_wgpu"]
+wgsl_minifier_ext = ["dep:wgsl-minifier", "dep:naga"]
 
 [dependencies]
 wesl.workspace = true

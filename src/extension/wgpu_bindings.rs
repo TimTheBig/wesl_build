@@ -1,10 +1,10 @@
-#![cfg(feature = "wgpu_bindings")]
+#![cfg(feature = "wgpu_bindings_ext")]
 
 use std::fmt::Display;
 use std::io::{BufWriter, Write};
 use std::{fs, path::{Path, PathBuf}};
 
-use wesl::Mangler;
+use wesl::{BasicSourceMap, Mangler};
 use wesl::ModulePath;
 use wgsl_to_wgpu::WriteOptions;
 
@@ -41,6 +41,7 @@ impl WgpuBindingsExtension<BufWriter<fs::File>> {
 #[derive(Debug, thiserror::Error)]
 pub enum WgpuBindingsError {
     IoErr(#[from] std::io::Error),
+    /// spans and paths are that of the compiled files
     CreateBindingsModuleErr {
         inner: wgsl_to_wgpu::CreateModuleError,
         wgsl_source: String,
@@ -120,6 +121,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         &mut self,
         mod_path: &ModulePath,
         wgsl_source_path: &str,
+        _source_map: &Option<BasicSourceMap>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         generate_bindings(
             self.binding_root_path,
@@ -127,6 +129,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
             mod_path,
             wgsl_source_path,
         )
+        // todo don't double box
         .map_err(Box::<_>::from)
     }
 }
@@ -154,7 +157,7 @@ fn generate_bindings(
     let text = create_shader_module(
         &wgsl_source,
         wgsl_source_path,
-        options
+        options,
     )?;
 
     let binding_path = format!(
@@ -183,6 +186,7 @@ fn generate_bindings(
 
 fn create_shader_module(
     wgsl_source: &str,
+    // path to the compiled file
     wgsl_include_path: &str,
     options: WriteOptions,
 ) -> Result<String, Box<WgpuBindingsError>> {
@@ -193,9 +197,24 @@ fn create_shader_module(
         options,
         wgsl_to_wgpu::ModulePath::default(),
         demangle_wesl,
-    ).map_err(|e| Box::from(WgpuBindingsError::CreateBindingsModuleErr {
-        inner: e, wgsl_source: wgsl_source.to_owned(), path: PathBuf::from(wgsl_include_path)
-    }))?;
+        // |str| source_map.unwrap().get_decl(str).unwrap().0
+    ).map_err(|e| {
+        let home_dir = std::env::home_dir();
+        let wgsl_path = if let Some(home_dir) = home_dir
+            && cfg!(target_family = "unix")
+            && let Some(home_dir) = home_dir.to_str()
+        {
+            wgsl_include_path.replace(home_dir, "~")
+        } else {
+            wgsl_include_path.to_owned()
+        };
+
+        Box::from(WgpuBindingsError::CreateBindingsModuleErr {
+            inner: e,
+            wgsl_source: wgsl_source.to_owned(),
+            path: PathBuf::from(wgsl_path)
+        })
+    })?;
     Ok(root.to_generated_bindings(options))
 }
 
