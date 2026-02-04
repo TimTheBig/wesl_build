@@ -16,7 +16,10 @@ fn main() {
 }
 ```
 
-Now all shaders in `src/shaders` will be compiled with subdirectories accting as modules
+Now all shaders in `src/shaders` will be compiled with subdirectories accting as modules, which can be nested
+
+## Features
+* logging - enables logging of the build along with fuerther logging in the built-in extensions
 
 ## Faster Shader Build Times
 

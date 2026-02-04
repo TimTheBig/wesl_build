@@ -26,8 +26,30 @@ pub enum WeslBuildError {
     ExtensionErr {
         extension_name: String,
         error: Box<dyn std::error::Error>,
+        // source: ExtensionErrorSource,
     },
 }
+
+// #[derive(Debug, thiserror::Error)]
+// enum ExtensionErrorSource {
+//     File {
+//         path: ModulePath,
+//         span: Option<Span>,
+//     },
+//     Module {
+//         path: ModulePath,
+//     },
+//     /// extension state or config error
+//     Extension {
+//         message: String
+//     },
+// }
+
+// impl Display for ExtensionErrorSource {
+//     fn fmt() {
+//         // todo make line link path for file
+//     }
+// }
 
 /// Init logging for better error messages
 ///
@@ -154,6 +176,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
                         .map_err(|e| extension_error(ext.as_ref(), e))?;
                 }
             }
+            Ok(())
         } else {
             let entry_path = entry.path();
 
