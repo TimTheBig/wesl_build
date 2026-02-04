@@ -3,6 +3,7 @@
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
+    fs,
 };
 
 use itertools::Itertools;
@@ -47,7 +48,7 @@ pub fn init_build_logger() {
         .try_init();
 
     if let Err(could_not_init) = could_init {
-        log::warn!("wesl_build::init_build_logger was called after logger was already initialized: {}", could_not_init);
+        log::warn!("wesl_build::init_build_logger was called after logger was already initialized: {could_not_init}");
     }
 }
 
@@ -95,7 +96,7 @@ pub fn build_shader_dir(
         log::debug!("initializing extension: {}", ext.name());
 
         ext.init_root(shader_path, &mut wesl)
-            .map_err(|e| extension_error(ext, e))?;
+            .map_err(|e| extension_error(ext.as_ref(), e))?;
     }
 
     // todo delete all in BINDING_ROOT_PATH before regen add some cashing(if wgsl_to_wgpu does not have it built-in),
@@ -109,11 +110,11 @@ pub fn build_shader_dir(
 
     for ext in extensions.iter_mut() {
         ext.exit_root(shader_path, &wesl)
-            .map_err(|e| extension_error(ext, e))?;
+            .map_err(|e| extension_error(ext.as_ref(), e))?;
     }
 
     // output shader_path to OUT_DIR/wesl_build_tree.path
-    // std::fs::write(
+    // fs::write(
     //     PathBuf::from(std::env::var_os("OUT_DIR").expect("wesl_build must be run in build.rs or in an env with the OUT_DIR environment variable set")).join("wesl_build_tree.path"),
     //     shader_path,
     // )?;
@@ -130,19 +131,19 @@ fn build_all_in_dir<WeslResolver: Resolver>(
     extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
     res: &Wesl<WeslResolver>,
 ) -> Result<(), WeslBuildError> {
-    for entry in std::fs::read_dir(path)?.filter_map(|entry| entry.ok())
+    fs::read_dir(path)?.filter_map(|entry| entry.ok().map(|en| (en.metadata(), en)))
     // run dirs after files to insure correct recursion
-    .sorted_by(|a, b| {
-        (a.metadata().ok().is_some_and(|m| m.is_file())).cmp(
-            &b.metadata().ok().is_some_and(|m| m.is_file())
+    .sorted_by(|(a_meta, _), (b_meta, _)| {
+        (a_meta.as_ref().ok().is_some_and(fs::Metadata::is_file)).cmp(
+            &b_meta.as_ref().ok().is_some_and(fs::Metadata::is_file)
         ).reverse()
-    }) {
-        if entry.metadata()?.is_dir() {
+    }).try_for_each(|(metadata, entry)| -> Result<(), WeslBuildError> {
+        if metadata?.is_dir() {
             // make new mod per dir recurce to use mod structure
             let dir_path = entry.path();
             for ext in extensions.iter_mut() {
                 ext.enter_mod(&dir_path)
-                    .map_err(|e| extension_error(ext, e))?;
+                    .map_err(|e| extension_error(ext.as_ref(), e))?;
             }
 
             build_all_in_dir(root_shader_path, &dir_path, wesl, extensions, res)?;
@@ -150,7 +151,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             if path != Path::new(root_shader_path) {
                 for ext in extensions.iter_mut() {
                     ext.exit_mod(&dir_path)
-                        .map_err(|e| extension_error(ext, e))?;
+                        .map_err(|e| extension_error(ext.as_ref(), e))?;
                 }
             }
         } else {
@@ -159,7 +160,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             if !(entry_path.extension() == Some(OsStr::new("wgsl"))
                 || entry_path.extension() == Some(OsStr::new("wesl")))
             {
-                continue;
+                return Ok(());
             }
             println!("cargo::rerun-if-changed={}", entry_path.display());
 
@@ -191,11 +192,11 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             let name_mangler = wesl::EscapeMangler;
             let mangled_name = &name_mangler.mangle(
                 &mod_path,
-                out_name.file_stem().map(|os_str| os_str.to_str()).flatten().unwrap()
+                out_name.file_stem().and_then(|os_str| os_str.to_str()).unwrap()
             );
 
             let source_map = build_artifact(
-                wesl, &mod_path, &mangled_name
+                wesl, &mod_path, mangled_name
             );
             #[cfg(feature = "logging")]
             log::info!("built: {}", &mod_path);
@@ -210,12 +211,11 @@ fn build_all_in_dir<WeslResolver: Resolver>(
 
             for ext in &mut *extensions {
                 ext.post_build(&mod_path, &wgsl_source_path, &source_map)
-                    .map_err(|e| extension_error(ext, e))?;
+                    .map_err(|e| extension_error(ext.as_ref(), e))?;
             }
+            Ok(())
         }
-    }
-
-    Ok(())
+    })
 }
 
 /// Compile a WESL program from a root file and output the result in Rust's `OUT_DIR`.

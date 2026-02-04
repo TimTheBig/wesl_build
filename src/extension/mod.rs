@@ -54,7 +54,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     ///
     /// ### Args
     /// * `shader_path` - the root dir of the shaders we are building
-    /// * `res` - the wesl resolver being used by wesl_build
+    /// * `res` - the wesl resolver being used by `wesl_build`
     fn init_root(
         &mut self,
         shader_root_path: &str,
@@ -65,7 +65,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     ///
     /// ### Args
     /// * `shader_path` - the root dir of the shaders we are building
-    /// * `res` - the wesl resolver being used by wesl_build
+    /// * `res` - the wesl resolver being used by `wesl_build`
     fn exit_root(
         &mut self,
         _shader_root_path: &str,
@@ -101,7 +101,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
 
 /// Util for wrapping an extensions error in a [`WeslBuildError`]
 pub(crate) fn extension_error(
-    ext: &Box<dyn WeslBuildExtension<impl Resolver>>,
+    ext: &dyn WeslBuildExtension<impl Resolver>,
     error: Box<dyn Error>,
 ) -> WeslBuildError {
     WeslBuildError::ExtensionErr {
