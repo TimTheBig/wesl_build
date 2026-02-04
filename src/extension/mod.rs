@@ -1,9 +1,8 @@
 use std::{
-    borrow::Cow,
-    path::Path,
+    borrow::Cow, error::Error, marker::PhantomData, path::Path
 };
 
-use wesl::{BasicSourceMap, ModulePath, Resolver, StandardResolver, Wesl};
+use wesl::{BasicSourceMap, ModulePath, Resolver, Wesl};
 
 use crate::WeslBuildError;
 
@@ -60,7 +59,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
         &mut self,
         shader_root_path: &str,
         res: &mut Wesl<WeslResolver>,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Box<dyn Error>>;
 
     /// The last time the extension is called this is in the root after all files/modules are covered
     ///
@@ -71,7 +70,7 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
         &mut self,
         _shader_root_path: &str,
         _res: &Wesl<WeslResolver>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         Ok(())
     }
 
@@ -79,12 +78,12 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     ///
     /// ### Args
     /// * `dir_path` - the current dir of the mod we are entering
-    fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
+    fn enter_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn Error>>;
     /// Go one level out of a shader module
     ///
     /// ### Args
     /// * `dir_path` - the current dir of the mod we are exiting
-    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn std::error::Error>>;
+    fn exit_mod(&mut self, dir_path: &Path) -> Result<(), Box<dyn Error>>;
 
     /// Run after a `wesl` file is compiled
     ///
@@ -96,13 +95,14 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
         wesl_path: &ModulePath,
         wgsl_built_path: &str,
         source_map: &Option<BasicSourceMap>,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> Result<(), Box<dyn Error>>;
+}
 }
 
 /// Util for wrapping an extensions error in a [`WeslBuildError`]
 pub(crate) fn extension_error(
-    ext: &Box<dyn WeslBuildExtension<StandardResolver>>,
-    error: Box<dyn std::error::Error>,
+    ext: &Box<dyn WeslBuildExtension<impl Resolver>>,
+    error: Box<dyn Error>,
 ) -> WeslBuildError {
     WeslBuildError::ExtensionErr {
         extension_name: ext.name().into_owned(),

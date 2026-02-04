@@ -5,7 +5,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use wesl::{BasicSourceMap, Mangler, ModulePath, Resolver, StandardResolver, Wesl, syntax::Span};
+use itertools::Itertools;
+use wesl::{BasicSourceMap, Mangler, ModulePath, Resolver, StandardResolver, Wesl};
 
 pub mod extension;
 use extension::{WeslBuildExtension, extension_error};
@@ -36,7 +37,12 @@ pub fn init_build_logger() {
 
     let could_init = env_logger::builder()
         .filter_level(LevelFilter::Debug)
+        .parse_env("WESL_BUILD_LOG_LEVEL")
         .filter_module("naga::front", LevelFilter::Info)
+        // don't spam every type selection
+        .filter_module("naga::proc::typifier", LevelFilter::Info)
+        .filter_module("naga::compact", LevelFilter::Debug)
+        .filter_module("naga::proc", LevelFilter::Debug)
         .format_timestamp(None)
         .try_init();
 
@@ -54,17 +60,26 @@ pub fn init_build_logger() {
 /// ## Example
 /// In `build.rs`:
 /// ```
+/// # use std::process::ExitCode;
 /// use wesl_build::{build_shader_dir, WeslBuildError};
 /// use wesl_build::{extensions, extension::WeslBuildExtension};
 ///
-/// build_shader_dir(
+/// match build_shader_dir(
 ///     # "test/src/shaders",
 ///     # /*
 ///     "src/shaders",
 ///     # */
 ///     wesl::CompileOptions::default(),
 ///     extensions![/* Extension::new() */]
-/// ).expect("Building shaders failed");
+/// ) {
+///    Ok(_) => ExitCode::SUCCESS,
+///    Err(err) => {
+#[cfg_attr(feature = "logging", doc = r#"        log::error!("{err}");"#)]
+#[cfg_attr(not(feature = "logging"), doc = r#"        println!("{err}");"#)]
+///
+///        ExitCode::FAILURE
+///   },
+/// };
 /// ```
 pub fn build_shader_dir(
     shader_path: &str,
@@ -77,7 +92,7 @@ pub fn build_shader_dir(
 
     for ext in extensions.iter_mut() {
         #[cfg(feature = "logging")]
-        log::debug!("initializing: {}", ext.name());
+        log::debug!("initializing extension: {}", ext.name());
 
         ext.init_root(shader_path, &mut wesl)
             .map_err(|e| extension_error(ext, e))?;
@@ -115,7 +130,13 @@ fn build_all_in_dir<WeslResolver: Resolver>(
     extensions: &mut [Box<dyn WeslBuildExtension<StandardResolver>>],
     res: &Wesl<WeslResolver>,
 ) -> Result<(), WeslBuildError> {
-    for entry in std::fs::read_dir(path)?.filter_map(|entry| entry.ok()) {
+    for entry in std::fs::read_dir(path)?.filter_map(|entry| entry.ok())
+    // run dirs after files to insure correct recursion
+    .sorted_by(|a, b| {
+        (a.metadata().ok().is_some_and(|m| m.is_file())).cmp(
+            &b.metadata().ok().is_some_and(|m| m.is_file())
+        ).reverse()
+    }) {
         if entry.metadata()?.is_dir() {
             // make new mod per dir recurce to use mod structure
             let dir_path = entry.path();

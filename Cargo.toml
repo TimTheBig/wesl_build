@@ -1,6 +1,6 @@
 [package]
 name = "wesl_build"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 
@@ -36,9 +36,11 @@ wgsl_to_wgpu = { version = "0.17", optional = true }
 wgsl-minifier = { version = "0.8", git = "https://github.com/TimTheBig/wgsl-minifier.git", optional = true }
 naga = { version = "28.0", optional = true , features = ["wgsl-in", "wgsl-out"] }
 
+# utils
+itertools = "0.14"
+
 [dev-dependencies]
 insta = "1.46"
-itertools = "0.14"
 tempfile = "3.24"
 
 [profile.dev.package.insta]
