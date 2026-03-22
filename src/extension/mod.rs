@@ -94,9 +94,8 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
         &mut self,
         wesl_path: &ModulePath,
         wgsl_built_path: &str,
-        source_map: &Option<BasicSourceMap>,
+        source_map: Option<&BasicSourceMap>,
     ) -> Result<(), Box<dyn Error>>;
-}
 }
 
 /// Util for wrapping an extensions error in a [`WeslBuildError`]

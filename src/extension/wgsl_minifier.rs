@@ -30,15 +30,14 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgslMini
         &mut self,
         _mod_path: &ModulePath,
         wgsl_source_path: &str,
-        _source_map: &Option<BasicSourceMap>,
+        _source_map: Option<&BasicSourceMap>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if self.release_only {
             let profile = std::env::var("PROFILE")?;
             match profile.as_str() {
-                "debug" => return Ok(()),
                 "release" => (),
-                _ => return Ok(()),
-            };
+                "debug" | _ => return Ok(()),
+            }
         }
         let wgsl_source = fs::read_to_string(wgsl_source_path)?;
 

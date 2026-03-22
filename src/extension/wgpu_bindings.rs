@@ -10,9 +10,9 @@ use wgsl_to_wgpu::WriteOptions;
 
 use crate::WeslBuildExtension;
 
-/// Generate bindings for your wgsl/wesl with wgpu_to_wgsl
+/// Generate bindings for your wgsl/wesl with [`wgpu_to_wgsl`]
 ///
-/// Note this will set the `ManglerKind` to `Escape`
+/// Note this will set the [`ManglerKind`] to `Escape`
 pub struct WgpuBindingsExtension<W: Write> {
     /// The path to output the rust bindings for shaders
     binding_root_path: &'static str,
@@ -121,7 +121,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         &mut self,
         mod_path: &ModulePath,
         wgsl_source_path: &str,
-        _source_map: &Option<BasicSourceMap>,
+        _source_map: Option<&BasicSourceMap>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         generate_bindings(
             self.binding_root_path,

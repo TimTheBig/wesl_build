@@ -233,7 +233,7 @@ fn build_all_in_dir<WeslResolver: Resolver>(
             );
 
             for ext in &mut *extensions {
-                ext.post_build(&mod_path, &wgsl_source_path, &source_map)
+                ext.post_build(&mod_path, &wgsl_source_path, source_map.as_ref())
                     .map_err(|e| extension_error(ext.as_ref(), e))?;
             }
             Ok(())
