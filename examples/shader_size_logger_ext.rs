@@ -61,7 +61,7 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WeslSize
         &mut self,
         wesl_path: &wesl::ModulePath,
         wgsl_built_path: &str,
-        _source_map: &Option<BasicSourceMap>,
+        _source_map: Option<&BasicSourceMap>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let name = wesl_path.last().expect("file must have an element in path");
 

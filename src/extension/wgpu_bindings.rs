@@ -112,7 +112,9 @@ impl<WeslResolver: wesl::Resolver> WeslBuildExtension<WeslResolver> for WgpuBind
         self.bindings_mod_path.pop();
         self.bindings_mod_path.push("mod.rs");
 
-        self.bindings_mod_file = BufWriter::new(fs::File::open(&self.bindings_mod_path)?);
+        self.bindings_mod_file = BufWriter::new(
+            fs::OpenOptions::new().append(true).open(&self.bindings_mod_path)?
+        );
 
         Ok(())
     }

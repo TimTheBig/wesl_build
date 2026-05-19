@@ -10,11 +10,14 @@ repository = "https://github.com/TimTheBig/wesl_build"
 keywords = ["wesl", "build", "system", "bindings"]
 categories = ["development-tools::build-utils", "graphics"]
 
+[lints.clippy]
+all = "warn"
+
 [workspace]
 members = [".", "wesl_build_import", "wesl_build_example"]
 
 [workspace.dependencies]
-wesl = "0.3"
+wesl = "0.4"
 
 [features]
 default = ["wgpu_bindings_ext"]
@@ -32,19 +35,18 @@ log = { version = "0.4", optional = true }
 thiserror = "2.0"
 
 # extentions
-wgsl_to_wgpu = { version = "0.17", optional = true }
+wgsl_to_wgpu = { version = "0.18", optional = true }
 wgsl-minifier = { version = "0.8", git = "https://github.com/TimTheBig/wgsl-minifier.git", optional = true }
-naga = { version = "28.0", optional = true , features = ["wgsl-in", "wgsl-out"] }
+naga = { version = "29.0", optional = true , features = ["wgsl-in", "wgsl-out"] }
 
 # utils
 itertools = "0.14"
 
 [dev-dependencies]
-insta = "1.46"
-tempfile = "3.24"
+insta = "1.47"
+tempfile = "3.27"
 
 [profile.dev.package.insta]
 opt-level = 3
-
 [profile.dev.package.similar]
 opt-level = 3

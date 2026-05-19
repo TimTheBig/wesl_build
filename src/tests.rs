@@ -225,7 +225,7 @@ mod build_tests {
             &mut self,
             wesl_path: &ModulePath,
             wgsl_built_path: &str,
-            source_map: &Option<BasicSourceMap>,
+            source_map: Option<&BasicSourceMap>,
         ) -> Result<(), Box<dyn Error>> {
             let mut msg = String::new();
             write!(
