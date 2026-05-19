@@ -19,7 +19,13 @@ fn main() {
 Now all shaders in `src/shaders` will be compiled with subdirectories accting as modules, which can be nested
 
 ## Features
-* logging - enables logging of the build along with fuerther logging in the built-in extensions
+* `logging` - enables logging of builds along with logging in the built-in extensions
+* `wgpu_bindings_ext` (default) - enables an extension that uses `wgsl_to_wgpu` to generate binding modules for your shaders
+* `math_consts_ext` (default) - enables an extension that adds math and type specific consts at compile-time to `constants`\
+**Consts**: `{u32, i32, f32}_{MAX, MIN}`, `{f32, f64}_{MIN_POSITIVE, EPSILON}`, and all stable rust math f64 constants, note: `FRAC_1_*` becomes `INV_*`
+* `wgsl_minifier_ext` - enables an extension that minifies shaders, optionally only in release builds
+
+Note: features post-fixed with `_ext` enable one or more implementors of `WeslBuildExtension`
 
 ## Faster Shader Build Times
 
