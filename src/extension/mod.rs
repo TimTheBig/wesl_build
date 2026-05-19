@@ -12,6 +12,9 @@ pub mod wgpu_bindings;
 #[cfg(feature = "wgsl_minifier_ext")]
 pub mod wgsl_minifier;
 
+#[cfg(feature = "math_consts_ext")]
+pub mod math_consts;
+
 /// A utility that improves the readability of the extensions input into [`build_shader_dir`](`crate::build_shader_dir`)
 ///
 /// ## Example
