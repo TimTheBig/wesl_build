@@ -101,6 +101,95 @@ pub trait WeslBuildExtension<WeslResolver: Resolver> {
     ) -> Result<(), Box<dyn Error>>;
 }
 
+// todo make user configiruble struct extension to access and mut Resolver
+pub struct ResolverConfigurator<
+    WeslResolver: Resolver,
+    SetupFunc: FnMut(&mut Wesl<WeslResolver>) -> Result<(), Box<dyn Error>>,
+> {
+    /// The setup function to run with access to the Wesl compiler
+    setup_fn: SetupFunc,
+    #[doc(hidden)]
+    _res: PhantomData<WeslResolver>
+}
+
+impl<WeslResolver: Resolver, SetupFunc> ResolverConfigurator<WeslResolver, SetupFunc>
+where SetupFunc: FnMut(&mut Wesl<WeslResolver>) -> Result<(), Box<dyn Error>> {
+    pub const fn new(setup_fn: SetupFunc) -> Self {
+        Self { setup_fn, _res: PhantomData }
+    }
+}
+
+impl<WeslResolver: Resolver, SetupFunc> WeslBuildExtension<WeslResolver> for ResolverConfigurator<WeslResolver, SetupFunc>
+where SetupFunc: FnMut(&mut Wesl<WeslResolver>) -> Result<(), Box<dyn Error>> {
+    fn name<'n>(&self) -> Cow<'n, str> {
+        "ResolverConfigurator".into()
+    }
+
+    // fn stage(&self) -> ExtensionStage {
+    //     ExtensionStage::SetupOverride
+    // }
+
+    fn init_root(
+        &mut self,
+        _shader_root_path: &str,
+        res: &mut Wesl<WeslResolver>,
+    ) -> Result<(), Box<dyn Error>> {
+        (self.setup_fn)(res)
+    }
+
+    fn enter_mod(&mut self, _dir_path: &Path) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+
+    fn exit_mod(&mut self, _dir_path: &Path) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+
+    fn post_build(
+        &mut self,
+        _wesl_path: &ModulePath,
+        _wgsl_built_path: &str,
+        _source_map: Option<&BasicSourceMap>,
+    ) -> Result<(), Box<dyn Error>> { Ok(()) }
+}
+
+// todo should each be a trait, in a composible way where all that are implemented are run
+// or a different input struct for the args that implements a shared trait
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
+enum ExtensionStage {
+    /// Setup state and configuration
+    Setup = 0,
+    /// Configure resolver and user selected options
+    SetupOverride,
+    /// Read the WESL source of any module
+    SourceRead,
+    /// Read the compiled WGSL code of each module before any, possibly symbol removing, alterations are made
+    // inspect, readonly wesl and built wgsl, (size logger, bindings)
+    BuiltSymbols,
+    /// May modify the code of each compiled module
+    // post user, output is not for user cunsumtion, modifiys names in destructive way (ie. minify)
+    BuiltWrite,
+    /// Read the code of each compiled module after all alterations are complete
+    // post user inspect, readonly wesl and built wgsl
+    BuiltRead,
+    /// Run after all files are built
+    Cleanup,
+}
+
+impl Ord for ExtensionStage {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // higher less then lower, so stages can be ordered by running order
+        (*self as u8).cmp(&(*other as u8)).reverse()
+    }
+}
+
+impl PartialOrd for ExtensionStage {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// Util for wrapping an extensions error in a [`WeslBuildError`]
 pub(crate) fn extension_error(
     ext: &dyn WeslBuildExtension<impl Resolver>,

@@ -12,21 +12,21 @@ macro_rules! type_const {
     ($type:ty; $const_name:ident) => {
         (
             concat!(stringify!($type), "_", stringify!($const_name)).to_uppercase(),
-            LiteralInstance::from(<$type>::$const_name)
+            ::wgsl_types::inst::LiteralInstance::from(<$type>::$const_name)
         )
     };
-    ($($types:ty),+; $const_name:ident) => {
+    ($($($types:ty),+; $const_name:ident),+$(,)?) => {
         [
-            $(
-                type_const!($types; $const_name)
-            ),+
+            $($(
+                type_const!($types; $const_name),
+            )+)+
         ]
     };
 }
 
 macro_rules! abstract_const {
-    ($const_name:ident) => {
-        (stringify!($const_name), LiteralInstance::AbstractFloat(::core::f64::consts::$const_name))
+    ($const_name:expr, $const_val:expr) => {
+        ($const_name.to_string(), LiteralInstance::AbstractFloat($const_val))
     };
 }
 
@@ -58,37 +58,38 @@ impl WeslBuildExtension<StandardResolver> for MathConstantsExtension {
         res: &mut wesl::Wesl<StandardResolver>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         use core::f64::consts as f64_consts;
+        use hyperreal::{Real, Rational};
 
         // type based consts
         res.add_constants(
             // todo add naga_ext feature that adds f64 consts here
-            type_const!(u32, i32, f32; MAX)
-            .into_iter().chain(
-            type_const!(u32, i32, f32; MIN)
-            ).chain(
-            type_const!(f32, f64; MIN_POSITIVE)
-        ).chain(
-            type_const!(f32, f64; EPSILON)
-        ));
+            type_const!(
+                u32, i32, f32; MAX,
+                u32, i32, f32; MIN,
+                f32; MIN_POSITIVE,
+                f32; EPSILON
+            ).into_iter()
+        );
         // math consts, all as f64 for AbstractFloat precision in consts
         res.add_constants([
-            abstract_const!(SQRT_2),
-            ("INV_SQRT_2", LiteralInstance::AbstractFloat(f64_consts::FRAC_1_SQRT_2)),
-            abstract_const!(E),
+            abstract_const!("SQRT_2", Real::from(2).sqrt().unwrap()),
+            abstract_const!("INV_SQRT_2", Real::from(2).sqrt().unwrap().inverse(/* not over 0 */).unwrap()),
+            abstract_const!("E", Real::e()),
 
-            abstract_const!(TAU),
-            abstract_const!(PI),
-            ("INV_PI", LiteralInstance::AbstractFloat(f64_consts::FRAC_1_PI)),
-            ("INV_TAU", LiteralInstance::AbstractFloat(1.0 / f64_consts::TAU)),
-            abstract_const!(FRAC_PI_2),
-            abstract_const!(FRAC_PI_3),
-            abstract_const!(FRAC_PI_4),
-            abstract_const!(FRAC_PI_6),
-            abstract_const!(FRAC_PI_8),
+            abstract_const!("PI", Real::pi()),
+            abstract_const!("TAU", Real::tau()),
+            abstract_const!("INV_PI", Real::pi().inverse().unwrap(/* not over 0 */)),
+            abstract_const!("INV_TAU", Real::tau().inverse().unwrap(/* not over 0 */)),
 
-            abstract_const!(LOG2_E),
-            abstract_const!(LOG2_10),
-            abstract_const!(LOG10_2),
+            abstract_const!("FRAC_PI_2", (Real::pi() / Real::from(2)).unwrap(/* not over 0 */)),
+            abstract_const!("FRAC_PI_3", (Real::pi() / Real::from(3)).unwrap()),
+            abstract_const!("FRAC_PI_4", (Real::pi() / Real::from(4)).unwrap()),
+            abstract_const!("FRAC_PI_6", (Real::pi() / Real::from(6)).unwrap()),
+            abstract_const!("FRAC_PI_8", (Real::pi() / Real::from(8)).unwrap()),
+
+            abstract_const!("LOG2_E", Real::e().log2().unwrap()),
+            abstract_const!("LOG2_10", Real::from(10).log2().unwrap()),
+            abstract_const!("LOG10_2", Real::from(2).log10().unwrap()),
 
             // unstable feature: "more_float_constants"
             // abstract_const!(PHI),
