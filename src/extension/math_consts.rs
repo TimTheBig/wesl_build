@@ -81,6 +81,9 @@ impl WeslBuildExtension<StandardResolver> for MathConstantsExtension {
             abstract_const!("INV_PI", Real::pi().inverse().unwrap(/* not over 0 */)),
             abstract_const!("INV_TAU", Real::tau().inverse().unwrap(/* not over 0 */)),
 
+            abstract_const!("DEG_TO_RAD", Real::one().to_radians()),
+            abstract_const!("RAD_TO_DEG", Real::one().to_degrees()),
+
             abstract_const!("FRAC_PI_2", (Real::pi() / Real::from(2)).unwrap(/* not over 0 */)),
             abstract_const!("FRAC_PI_3", (Real::pi() / Real::from(3)).unwrap()),
             abstract_const!("FRAC_PI_4", (Real::pi() / Real::from(4)).unwrap()),
