@@ -1,6 +1,6 @@
 # Wesl Build
 
-A <u>**simple**</u> and <u>**extensible**</u> build system for [wesl-rs](https://github.com/wgsl-tooling-wg/wesl-rs), the compiler for WESL (WGSL Extended) shaders.
+A <u>**simple**</u> and <u>**extensible**</u> build system for [wesl-rs](https://github.com/wgsl-tooling-wg/wesl-rs), the compiler for WESL (WGSL Extended) shaders. For cargo level convenience in shader dev.
 
 ## Example
 ```sh
